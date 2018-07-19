@@ -1,0 +1,18 @@
+*.nc 
+*.pickle
+*__pycache__
+*.log
+# Compiled python modules.
+*.pyc
+# Setuptools distribution folder.
+dist/*
+# Python egg metadata, regenerated from source files by setuptools.
+*.egg-info
+build
+dist
+.ipynb_checkpoints/*
+.DS_Store
+*.aux 
+*.fdb_latexmk 
+*.fls
+*.ipynb_checkpoints 
