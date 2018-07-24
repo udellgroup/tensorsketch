@@ -24,8 +24,6 @@ class Simulation(object):
     def run_sim(self):
         X, X0 = tensorsketch.util.square_tensor_gen(self.n, self.rank, dim=self.dim, typ=self.gen_typ,\
          noise_level=self.noise_level, seed = self.random_seed)
-        tensorsketch.util.square_tensor_gen(self.n, self.rank, dim=self.dim, typ=self.gen_typ,\
-         noise_level=self.noise_level, seed = self.random_seed)
         ranks = [self.rank for _ in range(self.dim)]
         ss = [self.s for _ in range(self.dim)]
         ks = [self.k for _ in range(self.dim)]

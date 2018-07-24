@@ -20,12 +20,19 @@ pip install tensorflow
 pip install -U tensorly
 ```
 
-## Results 
+## Simulations 
 
-Please refer to [simulation.ipynb] for simulation on synthetic data and [simulation_weather.ipynb] for simulation on real-world weather data. 
+Please refer to [simulation_weather.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/weather/simulation_weather.ipynb) for simulation on synthetic data to understand the theoretical properties of tensor sketching. 
+
+To apply tensor sketching to real-world example, please refer to [simulation.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/simulation/simulation.ipynb) for the experiments on real-world weather data. In particular, [`run_realdata_frk`] evaluates the performance for HOOI (Higher Order Orthogonal Iteration), One-Pass sketching, Two-Pass sketching algorithms given the rank of the real data and the desired compression level. 
 
 
 ## Local Package installation 
+Change the directory to the root repository (tensorsketch), and then run the following code in terminal. 
 ```
 pip install -e .
+```
+You can use the package in python by loading
+```
+import tensorsketch
 ```
