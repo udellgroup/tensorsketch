@@ -46,8 +46,57 @@ def random_matrix_generator(m, n, Rinfo_bucket):
     elif typ == 'sp':
         return np.random.binomial(n = 1,p = sparse_factor,size = (m,n))*\
         np.random.choice([-1,1], size = (m,n))*np.sqrt(3)*std
-    elif typ == 'ssrft': 
-        return 0
+
+def ssrft(k,X, seed = 1, mult = "right"):
+    np.random.seed(seed)
+    m, n = X.shape 
+    if mult == "left": 
+        perm1 = np.random.permutation(m) 
+        perm2 = np.random.permutation(m)  
+        coord = np.random.permutation(m)[0:k] 
+        sign1 = np.random.choice([-1, 1], size = m)
+        sign2 = np.random.choice([-1, 1], size = m) 
+        result = fftpack.dct(sign1.reshape(m,1)*X[perm1,:])
+        result = fftpack.dct(sign2.reshape(m,1)*result[perm2,:])
+        return result[coord,:]
+    if mult == "right": 
+        perm1 = np.random.permutation(n) 
+        perm2 = np.random.permutation(n)  
+        coord = np.random.permutation(n)[0:k] 
+        sign1 = np.random.choice([-1, 1], size = n)
+        sign2 = np.random.choice([-1, 1], size = n) 
+        result = fftpack.dct(X[:, perm1]*sign1.reshape(1,n), axis = 1) 
+        result = fftpack.dct(result[:, perm2]*sign2.reshape(1,n), axis = 1)
+        return result[:,coord]
+
+
+
+def ssrft_modeprod(k, X, mode, mult, seed = 1, fold = True): 
+    shape = X.shape 
+    X = tl.unfold(X, mode=mode)
+    X = ssrft(k, X, seed = seed, mult = mult)  
+    shape = np.asarray(shape)
+    shape[mode] = k
+    if fold: 
+        return tl.fold(X, mode = mode, shape = shape)
+    else: 
+        return X
+    
+
+def gprod(k, X, mode, seed = 1):
+    # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication) 
+    np.random.seed(seed)
+    I = X.shape
+    randmat = []
+    for idx, i in enumerate(I): 
+        print(idx, i)
+        if idx == mode: 
+            randmat.append(np.ones((1,k)))
+        else: 
+            randmat.append((np.random.rand(i,k)-1)*2)
+            #randmat.append(np.random.normal(0,1,size = (i,k)))
+    randmatprod = tl.tenalg.khatri_rao(randmat)
+    return tl.unfold(X, mode = mode) @ randmatprod
 
 def tensor_gen_help(core,arms):
     '''
@@ -139,4 +188,18 @@ def eval_rerr(X,X_hat,X0):
 
 if __name__ == "__main__":
     tl.set_backend('numpy')
-    X = square_tensor_gen(5, 3, dim=3, typ='id', noise_level=0.1)
+    X = np.arange(25).reshape((5,5))
+    Gmatrix = random_matrix_generator(3,5,RandomInfoBucket()) 
+    print(np.dot(Gmatrix,X))
+    print(ssrft(3,X, mult = "left").shape)
+    X, _ = square_tensor_gen(5, 3, dim=3, typ='id', noise_level=0.1) 
+    print(sum(X - tl.fold(tl.unfold(X,2),2,X.shape)))
+
+
+    Y = np.arange(120).reshape((3,4,10)) 
+    print(gprod(3,Y,1))
+
+
+
+
+

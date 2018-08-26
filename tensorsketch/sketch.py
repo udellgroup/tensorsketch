@@ -4,6 +4,7 @@ from operator import mul
 from .util import random_matrix_generator
 from .util import RandomInfoBucket
 from .util import square_tensor_gen
+from .util import ssrft, ssrft_modeprod, gprod
 
 class Sketch(object):
   
@@ -58,16 +59,26 @@ class Sketch(object):
         Rinfo_bucket = RandomInfoBucket(std = self.std, typ=self.typ, 
             random_seed = self.random_seed, sparse_factor = self.sparse_factor)
 
-        rm_generator = Sketch.sketch_arm_rm_generator(self.tensor_shape, \
+        if self.typ == "ssrft": 
+            for i in range(len(X.shape)):
+                self.arm_sketches.append(ssrft_modeprod(self.ks[i], self.X, i, \
+                    mult = "right", seed = self.random_seed, fold = False))
+        elif self.typ == "gprod": 
+            for i in range(len(X.shape)):
+                self.arm_sketches.append(gprod(self.ks[i], self.X, i, \
+                    seed = self.random_seed))
+        else: 
+            rm_generator = Sketch.sketch_arm_rm_generator(self.tensor_shape, \
             self.ks, Rinfo_bucket)
-
-        mode_n = 0
-        for rm in rm_generator:
-            self.arm_sketches.append(np.dot(tl.unfold(self.X, mode=mode_n), rm))
-            mode_n += 1
-        np.random.seed(random_seed) 
+            mode_n = 0
+            for rm in rm_generator:
+                self.arm_sketches.append(np.dot(tl.unfold(self.X, mode=mode_n), rm))
+                mode_n += 1
 
         if self.ss != []:
+            if self.typ == "gprod" or self.typ == "ssrft":
+                Rinfo_bucket = RandomInfoBucket(self.std, "g", \
+                    self.random_seed, sparse_factor = self.sparse_factor) 
             rm_generator = Sketch.sketch_core_rm_generator(self.tensor_shape, \
              self.ss, Rinfo_bucket)
             mode_n = 0

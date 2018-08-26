@@ -13,7 +13,8 @@ class Simulation(object):
     randomized linear map. We use the same random_seed for generating the
      data matrix and the arm matrix
     '''
-    def __init__(self, n, rank, k, s, dim, Rinfo_bucket, gen_typ, noise_level):
+    def __init__(self, n, rank, k, s, dim, Rinfo_bucket, gen_typ, noise_level, \
+        rm_typ = "g"):
         tl.set_backend('numpy')
         self.n, self.rank, self.k, self.s, self.dim = n, rank, k, s, dim 
         self.std, self.typ, self.random_seed, self.sparse_factor =  Rinfo_bucket.get_info()
@@ -21,13 +22,15 @@ class Simulation(object):
         self.gen_typ = gen_typ
         self.noise_level = noise_level
         self.Rinfo_bucket = Rinfo_bucket
+        self.rm_typ = rm_typ
     def run_sim(self):
         X, X0 = tensorsketch.util.square_tensor_gen(self.n, self.rank, dim=self.dim, typ=self.gen_typ,\
          noise_level=self.noise_level, seed = self.random_seed)
         ranks = [self.rank for _ in range(self.dim)]
         ss = [self.s for _ in range(self.dim)]
         ks = [self.k for _ in range(self.dim)]
-        tapprox = tensorsketch.tensor_approx.TensorApprox( X, ranks, ks = ks, ss = ss, random_seed = 1, store_phis = True)
+        tapprox = tensorsketch.tensor_approx.TensorApprox( X, ranks, ks = ks, \
+            ss = ss, random_seed = 1, rm_typ = self.rm_typ, store_phis = True)
         X_hat_hooi, _, _, _, (_, recover_time) = tapprox.tensor_approx('hooi')
         X_hat_twopass, _, _, _, (_, recover_time) = tapprox.tensor_approx('twopass')
         X_hat_onepass, _, _, _, (_, recover_time) = tapprox.tensor_approx('onepass')

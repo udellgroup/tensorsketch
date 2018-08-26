@@ -8,17 +8,19 @@ from tensorly.decomposition import tucker
 from .sketch_recover import SketchTwoPassRecover
 from .sketch_recover import SketchOnePassRecover
 
+
 class TensorApprox(object): 
     """
     The wrapper class for approximating the target tensor with three methods: HOOI, two-pass sketching, and one pass sketching
     """
-    def __init__(self, X, ranks, ks = [], ss = [], random_seed = 1, store_phis = True): 
+    def __init__(self, X, ranks, ks = [], ss = [], random_seed = 1, rm_typ = 'g', store_phis = True): 
         tl.set_backend('numpy') 
         self.X = X 
         self.ranks = ranks 
         self.ks = ks 
         self.ss = ss 
         self.random_seed = random_seed 
+        self.rm_typ = rm_typ
         self.store_phis = store_phis 
 
     def tensor_approx(self, method):  
@@ -32,7 +34,7 @@ class TensorApprox(object):
             sketch_time = -1 
             recover_time = running_time
         elif method == "twopass":
-            sketch = Sketch(self.X, self.ks, random_seed = self.random_seed,typ = 'g') 
+            sketch = Sketch(self.X, self.ks, random_seed = self.random_seed,typ = self.rm_typ) 
             arm_sketches, core_sketch = sketch.get_sketches() 
             sketch_time = time.time() - start_time 
             start_time = time.time() 
@@ -41,13 +43,14 @@ class TensorApprox(object):
             recover_time = time.time() - start_time 
         elif method == "onepass": 
             sketch = Sketch(self.X, self.ks, random_seed = self.random_seed, \
-                ss = self.ss, store_phis = self.store_phis, typ = 'g') 
+                ss = self.ss, store_phis = self.store_phis, typ = self.rm_typ) 
             arm_sketches, core_sketch = sketch.get_sketches() 
             sketch_time = time.time() - start_time
             start_time = time.time() 
             sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
                 TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss),\
-                RandomInfoBucket(random_seed = self.random_seed), sketch.get_phis()) 
+                RandomInfoBucket(random_seed = self.random_seed), \
+                sketch.get_phis()) 
             X_hat, _, _ = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:

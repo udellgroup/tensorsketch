@@ -5,6 +5,7 @@ from .util import RandomInfoBucket
 from .util import random_matrix_generator
 from .sketch import Sketch
 from .util import generate_super_diagonal_tensor  
+from .util import ssrft
 
 class SketchTwoPassRecover(object):
     def __init__(self, X, arm_sketches, ranks):
@@ -20,7 +21,6 @@ class SketchTwoPassRecover(object):
         Obtain the recovered tensor X_hat, core and arm tensor given the sketches
         using the two pass sketching algorithm 
         '''
-
         # get orthogonal basis for each arm
         Qs = []
         for sketch in self.arm_sketches:
@@ -44,7 +44,8 @@ class SketchTwoPassRecover(object):
 
 class SketchOnePassRecover(object):
 
-    def __init__(self, arm_sketches, core_sketch, Tinfo_bucket, Rinfo_bucket,phis = []):
+    def __init__(self, arm_sketches, core_sketch, Tinfo_bucket, Rinfo_bucket,\
+        phis = [], rm_typ = "g"):
         tl.set_backend('numpy')
         self.arms = []
         self.core_tensor = None
@@ -54,6 +55,7 @@ class SketchOnePassRecover(object):
         self.Rinfo_bucket = Rinfo_bucket
         self.phis = phis
         self.core_sketch = core_sketch
+        self.rm_typ = rm_typ
 
     def get_phis(self):
         '''
@@ -86,9 +88,11 @@ class SketchOnePassRecover(object):
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
                 np.linalg.pinv(np.dot(phis[mode_n], Qs[mode_n])), mode=mode_n)
         core_tensor, factors = tucker(self.core_tensor, ranks= self.ranks)
-        self.core_tensor = core_tensor
+        self.core_tensor = core_tensor  
+        
         for n in range(dim):
             self.arms.append(np.dot(Qs[n], factors[n]))
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+
         return X_hat, self.arms, self.core_tensor
 
