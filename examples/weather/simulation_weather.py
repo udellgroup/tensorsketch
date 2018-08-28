@@ -83,46 +83,33 @@ if __name__ == '__main__':
     ABSORB = ABSORB.filled(ABSORB.mean())
     SRFRAD = nc.Dataset("data/b.e11.B1850C5CN.f09_g16.005.cam.h0.SRFRAD.040001-049912.nc").variables['SRFRAD'][:]
     BURDENDUST = nc.Dataset("data/b.e11.B1850C5CN.f09_g16.005.cam.h0.BURDENDUST.040001-049912.nc").variables['BURDENDUST'][:] 
+    AODABS = nc.Dataset("data/b.e11.B1850C5CN.f09_g16.005.cam.h0.AODABS.040001-049912.nc").variables['AODABS'][:] 
+    AODABS = AODABS.filled(AODABS.mean())
+
+
+    run_realdata_fk(AODABS, "AODABS", rm_typ = "ssrft")
+    run_realdata_fk(AODABS, "AODABS", rm_typ = "u")
+    run_realdata_fk(AODABS, "AODABS", rm_typ = "gprod")
+    run_realdata_fk(AODABS, "AODABS", rm_typ = "g")
+
+    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "ssrft")
+    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "ssrft")
+    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "ssrft")
+
+    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "u")
+    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "u")
+    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "u")
+
+    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "gprod")
+    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "gprod")
+    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "gprod")
     
-    run_realdata_fk(ABSORB, "ABSORB", rm_typ = "ssrft")
-    run_realdata_fk(SRFRAD, "SRFRAD", rm_typ = "ssrft")
-    run_realdata_fk(BURDENDUST, "BURDENDUST", rm_typ = "ssrft")
+    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "g")
+    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "g")
+    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "g")
 
-    run_realdata_fk(ABSORB, "ABSORB", rm_typ = "u")
-    run_realdata_fk(SRFRAD, "SRFRAD", rm_typ = "u")
-    run_realdata_fk(BURDENDUST, "BURDENDUST", rm_typ = "u")
-
-    run_realdata_fk(ABSORB, "ABSORB", rm_typ = "gprod")
-    run_realdata_fk(SRFRAD, "SRFRAD", rm_typ = "gprod")
-    run_realdata_fk(BURDENDUST, "BURDENDUST", rm_typ = "gprod")
+    
 
 
-    run_realdata_frk(ABSORB, 8, "ABSORB", rm_typ = "ssrft")
-    run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ = "ssrft")
-    run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ = "ssrft")
-    run_realdata_frk(SRFRAD,15,"SRFRAD", rm_typ = "ssrft")
-    run_realdata_frk(SRFRAD,10,"SRFRAD", rm_typ = "ssrft")
-    run_realdata_frk(SRFRAD,8,"SRFRAD", rm_typ = "ssrft")
-    run_realdata_frk(BURDENDUST,15,"BURDENDUST", rm_typ = "ssrft")
-    run_realdata_frk(BURDENDUST,10,"BURDENDUST", rm_typ = "ssrft")
-    run_realdata_frk(BURDENDUST,8,"BURDENDUST", rm_typ = "ssrft")
 
-    run_realdata_frk(ABSORB, 8, "ABSORB", rm_typ = "u")
-    run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ = "u")
-    run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ = "u")
-    run_realdata_frk(SRFRAD,15,"SRFRAD", rm_typ = "u")
-    run_realdata_frk(SRFRAD,10,"SRFRAD", rm_typ = "u")
-    run_realdata_frk(SRFRAD,8,"SRFRAD", rm_typ = "u")
-    run_realdata_frk(BURDENDUST,15,"BURDENDUST", rm_typ = "u")
-    run_realdata_frk(BURDENDUST,10,"BURDENDUST", rm_typ = "u")
-    run_realdata_frk(BURDENDUST,8,"BURDENDUST", rm_typ = "u")
 
-    run_realdata_frk(ABSORB, 8, "ABSORB", rm_typ = "gprod")
-    run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ = "gprod")
-    run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ = "gprod")
-    run_realdata_frk(SRFRAD,15,"SRFRAD", rm_typ = "gprod")
-    run_realdata_frk(SRFRAD,10,"SRFRAD", rm_typ = "gprod")
-    run_realdata_frk(SRFRAD,8,"SRFRAD", rm_typ = "gprod")
-    run_realdata_frk(BURDENDUST,15,"BURDENDUST", rm_typ = "gprod")
-    run_realdata_frk(BURDENDUST,10,"BURDENDUST", rm_typ = "gprod")
-    run_realdata_frk(BURDENDUST,8,"BURDENDUST", rm_typ = "gprod")
