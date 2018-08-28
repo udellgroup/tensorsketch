@@ -144,8 +144,8 @@ def run_nssim_fk(gen_type,r0,noise_level, n, dim = 3,random_seed = 1, rm_typ = "
     return sim_list
 
 if __name__ == '__main__':
-    run_nssim_fk('id',5,0.01,200, rm_typ = "ssrft")
-    run_nssim_fk('id',5,0.1,600, rm_typ = "ssrft")
+    run_nssim_fk('id',5,0.01,600, rm_typ = "ssrft")
+'''    run_nssim_fk('id',5,0.1,600, rm_typ = "ssrft")
     run_nssim_fk('id',5,1,600, rm_typ = "ssrft")
     run_nssim_fk('lk',5,0.01,600, rm_typ = "ssrft")
     run_nssim_fk('lk',5,0.1,600, rm_typ = "ssrft")
@@ -177,6 +177,6 @@ if __name__ == '__main__':
     run_nssim_fk('sed',5,0.01,600, rm_typ = "gprod")
     run_nssim_fk('fed',5,0.01,600, rm_typ = "gprod")
 
-
+'''
 
 
