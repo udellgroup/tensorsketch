@@ -16,3 +16,4 @@ dist
 *.fdb_latexmk 
 *.fls
 *.ipynb_checkpoints 
+*.mat

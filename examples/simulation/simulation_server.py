@@ -144,8 +144,34 @@ def run_nssim_fk(gen_type,r0,noise_level, n, dim = 3,random_seed = 1, rm_typ = "
     return sim_list
 
 if __name__ == '__main__':
+    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('id',1,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "sp0") 
+
+
+    run_nssim_fk('id',5,0.01,600, rm_typ = "sp0")
+    run_nssim_fk('id',5,0.1,600, rm_typ = "sp0")
+    run_nssim_fk('id',5,1,600, rm_typ = "sp0")
+    run_nssim_fk('lk',5,0.01,600, rm_typ = "sp0")
+    run_nssim_fk('lk',5,0.1,600, rm_typ = "sp0")
+    run_nssim_fk('lk',5,1,600, rm_typ = "sp0")
+    run_nssim_fk('spd',5,0.01,600, rm_typ = "sp0")
+    run_nssim_fk('fpd',5,0.01,600, rm_typ = "sp0")
+    run_nssim_fk('sed',5,0.01,600, rm_typ = "sp0")
+    run_nssim_fk('fed',5,0.01,600, rm_typ = "sp0")
+
+
+''' 
     run_nssim_fk('id',5,0.01,600, rm_typ = "ssrft")
-'''    run_nssim_fk('id',5,0.1,600, rm_typ = "ssrft")
+    run_nssim_fk('id',5,0.1,600, rm_typ = "ssrft")
     run_nssim_fk('id',5,1,600, rm_typ = "ssrft")
     run_nssim_fk('lk',5,0.01,600, rm_typ = "ssrft")
     run_nssim_fk('lk',5,0.1,600, rm_typ = "ssrft")

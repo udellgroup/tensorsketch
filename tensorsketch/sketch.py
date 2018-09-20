@@ -18,7 +18,9 @@ class Sketch(object):
         total_num = np.prod(tensor_shape)
         for n in range(len(tensor_shape)):
             n1 = total_num//tensor_shape[n] # I_(-n)
-            yield random_matrix_generator(n1, ks[n], Rinfo_bucket)
+            # Construct the transposed matrix, because for some test matrices,  
+            # like sparse sign, the direction of the mutliplication matters. 
+            yield random_matrix_generator(ks[n], n1 , Rinfo_bucket).T
     @staticmethod
     def sketch_core_rm_generator(tensor_shape, ss, Rinfo_bucket):
         '''

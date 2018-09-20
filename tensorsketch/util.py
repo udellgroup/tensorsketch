@@ -36,7 +36,7 @@ def random_matrix_generator(m, n, Rinfo_bucket):
 
     std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
     np.random.seed(random_seed)
-    types = set(['g', 'u', 'sp'])
+    types = set(['g', 'u', 'sp', 'sp0', 'sp1'])
     assert typ in types, "please aset your type of random variable correctly"
 
     if typ == 'g':
@@ -44,8 +44,13 @@ def random_matrix_generator(m, n, Rinfo_bucket):
     elif typ == 'u':
         return np.random.uniform(low = -1, high = 1, size = (m,n))*np.sqrt(3)*std
     elif typ == 'sp':
-        return np.random.binomial(n = 1,p = sparse_factor,size = (m,n))*\
-        np.random.choice([-1,1], size = (m,n))*np.sqrt(3)*std
+        return np.random.choice([-1,0,1], size = (m,n), p = [sparse_factor/2, \
+            1- sparse_factor, sparse_factor/2])*np.sqrt(1/sparse_factor)*std
+    elif typ == 'sp0': 
+        return np.random.choice([-1,0,1], size = (m,n), p = [1/6, 2/3,1/6])*np.sqrt(3)*std 
+    elif typ == 'sp1':
+        return np.random.choice([-1, 0, 1], size = (m,n), p = \
+            [1/(2*np.sqrt(n)), 1- 1/np.sqrt(n), 1/(2*np.sqrt(n))])*np.sqrt(np.sqrt(n))*std
 
 def ssrft(k,X, seed = 1, mult = "right"):
     np.random.seed(seed)

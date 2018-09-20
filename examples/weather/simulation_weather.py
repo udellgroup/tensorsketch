@@ -79,6 +79,42 @@ def run_realdata_fk(data,name,random_seed = 1, rm_typ = "g"):
     return sim_list
     
 if __name__ == '__main__':   
+    '''
+        import scipy.io
+        combustion = scipy.io.loadmat('data/data_1000E-02.mat').get('data') 
+        combustion  =combustion[np.arange(200),:,:,:]
+        r = (20,12,12,5)
+        k = (40,25,25,5)
+        s = 2*np.asarray(k)+1
+        s[3] = 5
+        print(s)
+        _, _, _, hooi_rerr, _ = tensorsketch.tensor_approx.TensorApprox(combustion,r,k,s,rm_typ = 'ssrft').tensor_approx('hooi') 
+        _, _, _, twopass_rerr, _ = tensorsketch.tensor_approx.TensorApprox(combustion,r,k,s,rm_typ = 'ssrft').tensor_approx('twopass') 
+        _, _, _, onepass_rerr, _ = tensorsketch.tensor_approx.TensorApprox(combustion,r,k,s,rm_typ = 'ssrft').tensor_approx('onepass') 
+        print(hooi_rerr)
+        print(twopass_rerr)
+        print(onepass_rerr)
+    '''
+    '''
+    run_realdata_fk(combustion, "combustion", rm_typ = "ssrft")
+    run_realdata_fk(combustion, "combustion", rm_typ = "u")
+    run_realdata_fk(combustion, "combustion", rm_typ = "gprod")
+    run_realdata_fk(combustion, "combustion", rm_typ = "g")
+    
+    run_realdata_frk(combustion, 8, "combustion", rm_typ = "ssrft")
+    run_realdata_frk(combustion, 10,"combustion", rm_typ = "ssrft")
+    run_realdata_frk(combustion, 15,"combustion", rm_typ = "ssrft")
+    run_realdata_frk(combustion, 8, "combustion", rm_typ = "u")
+    run_realdata_frk(combustion, 10,"combustion", rm_typ = "u")
+    run_realdata_frk(combustion, 15,"combustion", rm_typ = "u")
+    run_realdata_frk(combustion, 8, "combustion", rm_typ = "gprod")
+    run_realdata_frk(combustion, 10,"combustion", rm_typ = "gprod")
+    run_realdata_frk(combustion, 15,"combustion", rm_typ = "gprod")
+    run_realdata_frk(combustion, 8, "combustion", rm_typ = "g")
+    run_realdata_frk(combustion, 10,"combustion", rm_typ = "g")
+    run_realdata_frk(combustion, 15,"combustion", rm_typ = "g")
+   ''' 
+ 
     ABSORB = nc.Dataset("data/b.e11.BRCP85C5CNBDRD.f09_g16.023.cam.h0.ABSORB.208101-210012.nc").variables['ABSORB'][:]
     ABSORB = ABSORB.filled(ABSORB.mean())
     SRFRAD = nc.Dataset("data/b.e11.B1850C5CN.f09_g16.005.cam.h0.SRFRAD.040001-049912.nc").variables['SRFRAD'][:]
@@ -87,26 +123,26 @@ if __name__ == '__main__':
     AODABS = AODABS.filled(AODABS.mean())
 
 
-    run_realdata_fk(AODABS, "AODABS", rm_typ = "ssrft")
-    run_realdata_fk(AODABS, "AODABS", rm_typ = "u")
-    run_realdata_fk(AODABS, "AODABS", rm_typ = "gprod")
-    run_realdata_fk(AODABS, "AODABS", rm_typ = "g")
+    run_realdata_fk(AODABS, "AODABS", rm_typ = "sp0")
+    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "sp0")
+    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "sp0")
+    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "sp0")
 
-    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "ssrft")
-    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "ssrft")
-    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "ssrft")
+    run_realdata_fk(SRFRAD, "SRFRAD", rm_typ = "sp0")
+    run_realdata_frk(SRFRAD, 8, "SRFRAD", rm_typ = "sp0")
+    run_realdata_frk(SRFRAD, 10, "SRFRAD", rm_typ = "sp0")
+    run_realdata_frk(SRFRAD, 15, "SRFRAD", rm_typ = "sp0")
 
-    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "u")
-    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "u")
-    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "u")
+    run_realdata_fk(BURDENDUST, "BURDENDUST", rm_typ = "sp0")
+    run_realdata_frk(BURDENDUST, 8, "BURDENDUST", rm_typ = "sp0")
+    run_realdata_frk(BURDENDUST, 10, "BURDENDUST", rm_typ = "sp0")
+    run_realdata_frk(BURDENDUST, 15, "BURDENDUST", rm_typ = "sp0")
 
-    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "gprod")
-    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "gprod")
-    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "gprod")
-    
-    run_realdata_frk(AODABS, 8, "AODABS", rm_typ = "g")
-    run_realdata_frk(AODABS, 10, "AODABS", rm_typ = "g")
-    run_realdata_frk(AODABS, 15, "AODABS", rm_typ = "g")
+    run_realdata_fk(ABSORB, "ABSORB", rm_typ = "sp0")
+    run_realdata_frk(ABSORB, 8, "ABSORB", rm_typ = "sp0")
+    run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ = "sp0")
+    run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ = "sp0")
+
 
     
 
