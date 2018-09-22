@@ -17,3 +17,4 @@ dist
 *.fls
 *.ipynb_checkpoints 
 *.mat
+*.npy
