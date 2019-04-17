@@ -19,3 +19,5 @@ dist
 *.mat
 *.npy
 combustion/*
+*.mov 
+*.mp4

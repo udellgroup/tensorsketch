@@ -31,13 +31,13 @@ class Simulation(object):
         ks = [self.k for _ in range(self.dim)]
         tapprox = tensorsketch.tensor_approx.TensorApprox( X, ranks, ks = ks, \
             ss = ss, random_seed = 1, rm_typ = self.rm_typ, store_phis = True)
-        X_hat_hooi, _, _, _, (_, recover_time) = tapprox.tensor_approx('hooi')
-        X_hat_twopass, _, _, _, (_, recover_time) = tapprox.tensor_approx('twopass')
-        X_hat_onepass, _, _, _, (_, recover_time) = tapprox.tensor_approx('onepass')
+        X_hat_hooi, _, _, _, time_hooi = tapprox.tensor_approx('hooi')
+        X_hat_twopass, _, _, _, time_twopass = tapprox.tensor_approx('twopass')
+        X_hat_onepass, _, _, _, time_onepass = tapprox.tensor_approx('onepass')
         rerr_hooi = tensorsketch.util.eval_rerr(X,X_hat_hooi,X0)
         rerr_twopass = tensorsketch.util.eval_rerr(X,X_hat_twopass,X0)
         rerr_onepass = tensorsketch.util.eval_rerr(X,X_hat_onepass,X0)
-        return(rerr_hooi, rerr_twopass, rerr_onepass)
+        return(rerr_hooi, rerr_twopass, rerr_onepass), (time_hooi, time_twopass, time_onepass)
 
 import matplotlib 
 import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     for idx, noise_level in enumerate(noise_levels): 
         print('Noise_level:', noise_level)
         simu = Simulation(n, rank, k, s, dim, Rinfo_bucket, gen_typ, noise_level)
-        rerr_hooi, rerr_twopass, rerr_onepass = simu.run_sim()
+        (rerr_hooi, rerr_twopass, rerr_onepass),_ = simu.run_sim()
         #print('hooi rerr:', rerr) 
         hooi_rerr[idx] = rerr_hooi 
         two_pass_rerr[idx] = rerr_twopass

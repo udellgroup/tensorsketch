@@ -68,7 +68,7 @@ class SketchOnePassRecover(object):
             phis.append(rm) 
         return phis
 
-    def recover(self):
+    def recover(self, eval_xhat = True):
         '''
         Obtain the recovered tensor X_hat, core and arm tensor given the sketches
         using the one pass sketching algorithm 
@@ -92,7 +92,9 @@ class SketchOnePassRecover(object):
         
         for n in range(dim):
             self.arms.append(np.dot(Qs[n], factors[n]))
-        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
-
+        if eval_xhat:
+            X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        else: 
+            X_hat = eval('tl.tucker_to_tensor(self.core_tensor, self.arms)')
         return X_hat, self.arms, self.core_tensor
 

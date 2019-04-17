@@ -4,7 +4,7 @@ from operator import mul
 from .util import random_matrix_generator
 from .util import RandomInfoBucket
 from .util import square_tensor_gen
-from .util import ssrft, ssrft_modeprod, gprod
+from .util import ssrft, ssrft_modeprod, gprod, sp0prod
 
 class Sketch(object):
   
@@ -69,6 +69,10 @@ class Sketch(object):
             for i in range(len(X.shape)):
                 self.arm_sketches.append(gprod(self.ks[i], self.X, i, \
                     seed = self.random_seed))
+        elif self.typ == "sp0prod": 
+            for i in range(len(X.shape)):
+                self.arm_sketches.append(sp0prod(self.ks[i], self.X, i, \
+                    seed = self.random_seed))
         else: 
             rm_generator = Sketch.sketch_arm_rm_generator(self.tensor_shape, \
             self.ks, Rinfo_bucket)
@@ -78,7 +82,7 @@ class Sketch(object):
                 mode_n += 1
 
         if self.ss != []:
-            if self.typ == "gprod" or self.typ == "ssrft":
+            if self.typ == "gprod" or self.typ == "ssrft" or self.typ == "sp0prod":
                 Rinfo_bucket = RandomInfoBucket(self.std, "g", \
                     self.random_seed, sparse_factor = self.sparse_factor) 
             rm_generator = Sketch.sketch_core_rm_generator(self.tensor_shape, \

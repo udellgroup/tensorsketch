@@ -94,12 +94,23 @@ def gprod(k, X, mode, seed = 1):
     I = X.shape
     randmat = []
     for idx, i in enumerate(I): 
-        print(idx, i)
         if idx == mode: 
             randmat.append(np.ones((1,k)))
         else: 
-            randmat.append((np.random.rand(i,k)-1)*2)
-            #randmat.append(np.random.normal(0,1,size = (i,k)))
+            #randmat.append((np.random.rand(i,k)-1)*2)
+            randmat.append(np.random.normal(0,1,size = (i,k)))
+    randmatprod = tl.tenalg.khatri_rao(randmat)
+    return tl.unfold(X, mode = mode) @ randmatprod
+def sp0prod(k, X, mode, seed = 1):
+    # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication) 
+    np.random.seed(seed)
+    I = X.shape
+    randmat = []
+    for idx, i in enumerate(I): 
+        if idx == mode: 
+            randmat.append(np.ones((1,k)))
+        else: 
+            randmat.append(np.random.choice([-1,0,1], size = (i,k), p = [1/6, 2/3,1/6])*np.sqrt(3))
     randmatprod = tl.tenalg.khatri_rao(randmat)
     return tl.unfold(X, mode = mode) @ randmatprod
 
@@ -124,7 +135,7 @@ def generate_super_diagonal_tensor(diagonal_elems, dim):
 
 
 
-def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None):
+def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None, sparse_factor = 0.2):
     '''
     :param n: size of the tensor generated n*n*...*n
     :param r: rank of the tensor or equivalently, the size of core tensor
@@ -136,7 +147,7 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None):
     if seed: 
         np.random.seed(seed) 
 
-    types = set(['id', 'lk', 'fpd', 'spd', 'sed', 'fed'])
+    types = set(['id', 'lk', 'fpd', 'spd', 'sed', 'fed','slk'])
     assert typ in types, "please set your type of tensor correctly"
     total_num = np.power(n, dim)
 
@@ -180,11 +191,25 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None):
             arm, _ = np.linalg.qr(arm)
             arms.append(arm)
             tensor = tl.tenalg.mode_dot(tensor, arm, mode=i)
-        true_signal_mag = np.linalg.norm(core_tensor)**2
+        true_signal_mag = np.linalg.norm(tensor)**2
         noise = np.random.normal(0, 1, np.repeat(n, dim))
-        X = tensor + noise*np.sqrt((noise_level**2)*true_signal_mag/np.product\
-            (total_num))
+        X = tensor + noise*np.sqrt((noise_level**2)*true_signal_mag/total_num)
         return X, tensor
+
+    if typ == "slk": 
+        core_tensor = np.random.normal(0,1,[r for _ in range(dim)])
+        arms = []
+        tensor = core_tensor
+        for i in np.arange(dim): 
+            arm =  np.random.normal(0,1,size = (n,r))
+            arm = arm*np.random.binomial(1,sparse_factor,size=(n,r))
+            arms.append(arm)
+            tensor = tl.tenalg.mode_dot(tensor, arm, mode=i) 
+        true_signal_mag = np.linalg.norm(tensor)**2
+        tensor0 = tensor
+        tensor = tensor + np.random.normal(0,1,size = [n for _ in range(dim)])\
+        *np.sqrt((noise_level**2)*true_signal_mag/total_num) 
+        return tensor, tensor0 
 
 def eval_rerr(X,X_hat,X0):
     error = X-X_hat

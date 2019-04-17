@@ -19,6 +19,12 @@ import simulation
 import warnings
 warnings.filterwarnings('ignore')
 
+class ClassName(object):
+    """docstring for ClassName"""
+    def __init__(self, arg):
+        super(ClassName, self).__init__()
+        self.arg = arg
+        
 
 # In[2]:
 
@@ -52,6 +58,7 @@ def run_nssim(gen_type,r,noise_level, ns = np.arange(100,101,100), dim = 3, sim_
     :param random_seed: random seed for generating the random matrix  
     """
     sim_list = []
+    sim_time_list = [[],[]]
     for id, n in enumerate(ns): 
         if gen_type in ['id','lk']: 
             ks =np.arange(r, int(n/2),int(n/20)) 
@@ -62,16 +69,39 @@ def run_nssim(gen_type,r,noise_level, ns = np.arange(100,101,100), dim = 3, sim_
         hooi_rerr = np.zeros((sim_runs, len(ks)))
         two_pass_rerr = np.zeros((sim_runs,len(ks)))
         one_pass_rerr = np.zeros((sim_runs,len(ks)))
+        
+        hooi_sketch_time = np.zeros((sim_runs, len(ks)))
+        two_pass_sketch_time = np.zeros((sim_runs,len(ks)))
+        one_pass_sketch_time = np.zeros((sim_runs,len(ks)))
+
+        hooi_recover_time = np.zeros((sim_runs, len(ks)))
+        two_pass_recover_time = np.zeros((sim_runs,len(ks)))
+        one_pass_recover_time = np.zeros((sim_runs,len(ks)))
+
         for i in range(sim_runs): 
             for idx, k in enumerate(ks): 
                 simu = simulation.Simulation(n, r, k, 2*k+1, dim, tensorsketch.util.RandomInfoBucket(random_seed=random_seed), gen_type, noise_level,rm_typ)
-                rerr_hooi, rerr_twopass, rerr_onepass = simu.run_sim()
+                (rerr_hooi, rerr_twopass, rerr_onepass), (time_hooi, time_twopass, time_onepass) = simu.run_sim()
                 hooi_rerr[i,idx] = rerr_hooi
                 two_pass_rerr[i,idx] = rerr_twopass
-                one_pass_rerr[i,idx] = rerr_onepass
+                one_pass_rerr[i,idx] = rerr_onepass 
+                
+                hooi_sketch_time[i,idx] = time_hooi[0]
+                two_pass_sketch_time[i,idx] = time_twopass[0]
+                one_pass_sketch_time[i,idx] = time_onepass[0]
+                hooi_recover_time[i,idx] = time_hooi[1]
+                two_pass_recover_time[i,idx] = time_twopass[1]
+                one_pass_recover_time[i,idx] = time_onepass[1]
+   
+
         sim_list.append([two_pass_rerr,one_pass_rerr,hooi_rerr])
+        sim_time_list[0].append([two_pass_sketch_time,one_pass_sketch_time,hooi_sketch_time])
+        sim_time_list[1].append([two_pass_recover_time,one_pass_recover_time,hooi_recover_time])
+
     pickle.dump( sim_list, open(sim_name(gen_type,r,noise_level,dim, rm_typ) +".pickle", "wb" ) )
+    pickle.dump( sim_time_list, open(sim_name(gen_type,r,noise_level,dim, rm_typ) +"_time.pickle", "wb" ) )
     return sim_list
+
 
 
 # In[4]:
@@ -144,29 +174,67 @@ def run_nssim_fk(gen_type,r0,noise_level, n, dim = 3,random_seed = 1, rm_typ = "
     return sim_list
 
 if __name__ == '__main__':
-    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('id',1,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "sp0") 
-    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "sp0") 
+    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('slk',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('slk',5,0.1,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('slk',5,1,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "sp0prod")
+    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "sp0prod")
 
 
-    run_nssim_fk('id',5,0.01,600, rm_typ = "sp0")
-    run_nssim_fk('id',5,0.1,600, rm_typ = "sp0")
-    run_nssim_fk('id',5,1,600, rm_typ = "sp0")
-    run_nssim_fk('lk',5,0.01,600, rm_typ = "sp0")
-    run_nssim_fk('lk',5,0.1,600, rm_typ = "sp0")
-    run_nssim_fk('lk',5,1,600, rm_typ = "sp0")
-    run_nssim_fk('spd',5,0.01,600, rm_typ = "sp0")
-    run_nssim_fk('fpd',5,0.01,600, rm_typ = "sp0")
-    run_nssim_fk('sed',5,0.01,600, rm_typ = "sp0")
-    run_nssim_fk('fed',5,0.01,600, rm_typ = "sp0")
+    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('slk',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('slk',5,0.1,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('slk',5,1,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "g")
+    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "g")
+
+
+    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('slk',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('slk',5,0.1,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('slk',5,1,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "gprod")
+    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "gprod")
+
+    run_nssim('lk',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('lk',5,0.1,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('lk',5,1,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('spd',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('fpd',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('fed',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('sed',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('slk',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('slk',5,0.1,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('slk',5,1,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('id',5,0.01,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('id',5,0.1,np.arange(200,601,200),rm_typ = "ssrft")
+    run_nssim('id',5,1,np.arange(200,601,200),rm_typ = "ssrft")
+
+
+
+
 
 
 ''' 

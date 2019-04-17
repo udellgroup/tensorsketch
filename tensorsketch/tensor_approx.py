@@ -26,8 +26,8 @@ class TensorApprox(object):
     def tensor_approx(self, method):  
         start_time = time.time() 
         if method == "hooi":
-            core, tucker_factors = tucker(self.X, self.ranks, init = 'svd') 
-            X_hat = tl.tucker_to_tensor(core, tucker_factors) 
+            tucker_core, tucker_factors = tucker(self.X, self.ranks, init = 'svd') 
+            X_hat = tl.tucker_to_tensor(tucker_core, tucker_factors) 
             running_time = time.time() - start_time 
             core_sketch = np.zeros(1) 
             arm_sketches = [[] for i in np.arange(len(self.X.shape)) ]
@@ -39,7 +39,7 @@ class TensorApprox(object):
             sketch_time = time.time() - start_time 
             start_time = time.time() 
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
-            X_hat, _, _ = sketch_two_pass.recover() 
+            X_hat, tucker_factors, tucker_core = sketch_two_pass.recover() 
             recover_time = time.time() - start_time 
         elif method == "onepass": 
             sketch = Sketch(self.X, self.ks, random_seed = self.random_seed, \
@@ -51,14 +51,14 @@ class TensorApprox(object):
                 TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss),\
                 RandomInfoBucket(random_seed = self.random_seed), \
                 sketch.get_phis()) 
-            X_hat, _, _ = sketch_one_pass.recover()
+            X_hat, tucker_factors, tucker_core = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
             raise Exception("please use either of the three methods: hooi, twopass, onepass")
         # Compute the the relative error when the true low rank tensor is unknown. 
         # Refer to simulation.py in case when the true low rank tensor is given. 
         rerr = eval_rerr(self.X, X_hat, self.X) 
-        return X_hat, core_sketch, arm_sketches, rerr, (sketch_time, recover_time)
+        return X_hat, (tucker_core, tucker_factors) ,(core_sketch, arm_sketches), rerr, (sketch_time, recover_time)
     def tensor_approx_sketch(self, sketch, method): 
         # Construct the approximation directly from sketch
         start_time = time.time() 
