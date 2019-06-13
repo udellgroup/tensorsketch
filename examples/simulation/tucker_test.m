@@ -1,21 +1,4 @@
-%% Demo 2: Tucker decomposition of dense tensor
-%
-% This script gives a demo of tucker_ts and tucker_ttmts decomposing a 
-% dense tensor. The script generates a dense tensor and then decomposes 
-% it using both tucker_ts and tucker_ttmts, as well as tucker_als from 
-% Tensor Toolbox [1]. Please note that the script requires Tensor Toolbox
-% version 2.6 or later.
-%
-% REFERENCES:
-%
-%   [1] B. W. Bader, T. G. Kolda and others. MATLAB Tensor Toolbox 
-%       Version 2.6, Available online, February 2015. 
-%       URL: http://www.sandia.gov/~tgkolda/TensorToolbox/.
-
-% Author:   Osman Asif Malik
-% Email:    osman.malik@colorado.edu
-% Date:     September 17, 2018
-
+%% This script test the correctness of tucker_als 
 %% Include relevant files
 
 addpath(genpath('help_functions'));

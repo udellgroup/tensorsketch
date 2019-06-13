@@ -22,3 +22,6 @@ combustion/*
 *.mov 
 *.mp4
 .idea/*
+examples/simulation/journal_simulation_old.ipynb
+examples/simulation/aistats_simulation.ipynb
+examples/simulation/tucker_test.m
