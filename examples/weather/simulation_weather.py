@@ -143,9 +143,3 @@ if __name__ == '__main__':
     run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ = "sp0")
     run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ = "sp0")
 
-
-    
-
-
-
-
