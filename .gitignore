@@ -1,5 +1,4 @@
-*.nc 
-*.pickle
+*.nc
 *__pycache__
 *.log
 # Compiled python modules.
@@ -25,3 +24,7 @@ combustion/*
 examples/simulation/journal_simulation_old.ipynb
 examples/simulation/aistats_simulation.ipynb
 examples/simulation/tucker_test.m
+examples/video/data/*.pickle
+examples/video/*.pickle
+examples/combustion/data/*.pickle
+examples/weather/data/*.pickle
