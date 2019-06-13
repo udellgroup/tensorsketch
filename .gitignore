@@ -27,4 +27,3 @@ examples/simulation/tucker_test.m
 examples/video/data/*.pickle
 examples/video/*.pickle
 examples/combustion/data/*.pickle
-examples/weather/data/*.pickle
