@@ -21,3 +21,4 @@ dist
 combustion/*
 *.mov 
 *.mp4
+.idea/*
