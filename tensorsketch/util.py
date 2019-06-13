@@ -20,9 +20,9 @@ class TensorInfoBucket(object):
         return self.tensor_shape, self.ks, self.ranks, self.ss
 
 class RandomInfoBucket(object):
-    ''' 
+    '''
     Information for generating randomized linear maps
-    ''' 
+    '''
     def __init__(self, std=1, typ='g', random_seed = 0, sparse_factor = 0.1):
         self.std = std
         self.typ = typ
@@ -33,7 +33,14 @@ class RandomInfoBucket(object):
         return self.std, self.typ, self.random_seed, self.sparse_factor
 
 def random_matrix_generator(m, n, Rinfo_bucket):
-
+    '''
+    Generate random matrix of size m x n
+    :param m: length
+    :param n: width
+    :param Rinfo_bucket: parameters fo generating the random matrix: std (standard devidation for each entry); typ
+    (u: uniform; g: Gaussian; sp: sparsity=sparse_factor; sp0: sparsity=2/3;sp1:sparsity=1-1/sqrt(n) )
+    :return: random matrix
+    '''
     std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
     np.random.seed(random_seed)
     types = set(['g', 'u', 'sp', 'sp0', 'sp1'])
@@ -53,6 +60,14 @@ def random_matrix_generator(m, n, Rinfo_bucket):
             [1/(2*np.sqrt(n)), 1- 1/np.sqrt(n), 1/(2*np.sqrt(n))])*np.sqrt(np.sqrt(n))*std
 
 def ssrft(k,X, seed = 1, mult = "right"):
+    '''
+    Perform a SSRFT transform
+    :param k: reduced dimension
+    :param X: matrix
+    :param seed: random seed
+    :param mult: left reduce or right reduce the matrix to dimension k
+    :return: Reduced matrix after ssrft transform
+    '''
     np.random.seed(seed)
     m, n = X.shape 
     if mult == "left": 
@@ -77,7 +92,16 @@ def ssrft(k,X, seed = 1, mult = "right"):
 
 
 def ssrft_modeprod(k, X, mode, mult, seed = 1, fold = True): 
-    shape = X.shape 
+    '''
+    SSRFT transform of a tensor
+    :param k: reduced dimension
+    :param X: data tensor
+    :param mode: mode on which reduction happens
+    :param mult: left reduce or right reduce
+    :param seed: rand seed
+    :param fold: whether fold the reduced the matrix back to a tensor
+    '''
+    shape = X.shape
     X = tl.unfold(X, mode=mode)
     X = ssrft(k, X, seed = seed, mult = mult)  
     shape = np.asarray(shape)
@@ -89,6 +113,14 @@ def ssrft_modeprod(k, X, mode, mult, seed = 1, fold = True):
     
 
 def gprod(k, X, mode, seed = 1):
+    '''
+    Dimension reduction based on Tensor random projection (https://r2learning.github.io/assets/papers/CameraReadySubmission%2041.pdf)
+    where each submatrix is standard Gaussian
+    :param k: reduced dimension
+    :param X: data tensor
+    :param mode: mode on which dimension reduction happens
+    :return: unfolding of the reduced tensor
+    '''
     # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication) 
     np.random.seed(seed)
     I = X.shape
@@ -102,7 +134,15 @@ def gprod(k, X, mode, seed = 1):
     randmatprod = tl.tenalg.khatri_rao(randmat)
     return tl.unfold(X, mode = mode) @ randmatprod
 def sp0prod(k, X, mode, seed = 1):
-    # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication) 
+    # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication)
+    '''
+    Dimension reduction based on Tensor random projection (https://r2learning.github.io/assets/papers/CameraReadySubmission%2041.pdf)
+    where each submatrix is sparse matrix with sparsity = 2/3
+    :param k: reduced dimension
+    :param X: data tensor
+    :param mode: mode on which dimension reduction happens
+    :return: unfolding of the reduced tensor
+    '''
     np.random.seed(seed)
     I = X.shape
     randmat = []
@@ -126,6 +166,9 @@ def tensor_gen_help(core,arms):
 
 
 def generate_super_diagonal_tensor(diagonal_elems, dim):
+    '''
+    Generate super diagonal tensor of dimension = dim
+    '''
     n = len(diagonal_elems)
     tensor = np.zeros(np.repeat(n, dim))
     for i in range(n):
@@ -152,6 +195,7 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None, 
     total_num = np.power(n, dim)
 
     if typ == 'id':
+        # identity
         elems = [1 for _ in range(r)]
         elems.extend([0 for _ in range(n-r)])
         noise = np.random.normal(0, 1, [n for _ in range(dim)])
@@ -159,30 +203,35 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None, 
         return X0 +noise*np.sqrt((noise_level**2)*r/total_num), X0
         
     if typ == 'spd':
+        # Slow polynomial decay
         elems = [1 for _ in range(r)]
         elems.extend([1.0/i for i in range(2, n-r+2)])
         X0 = generate_super_diagonal_tensor(elems, dim)
         return X0, X0 
 
     if typ == 'fpd':
+        # Fast polynomial decay
         elems = [1 for _ in range(r)]
         elems.extend([1.0/(i*i) for i in range(2, n - r + 2)])
         X0 = generate_super_diagonal_tensor(elems, dim)
         return X0, X0
 
     if typ == 'sed':
+        # Slow exponential decay
         elems = [1 for _ in range(r)]
         elems.extend([np.power(10, -0.25*i) for i in range(2, n - r + 2)])
         X0 = generate_super_diagonal_tensor(elems, dim)
         return X0, X0
 
     if typ == 'fed':
+        # Fast Exponential decay
         elems = [1 for _ in range(r)]
         elems.extend([np.power(10, (-1.0)*i) for i in range(2, n - r + 2)])
         X0 = generate_super_diagonal_tensor(elems, dim)
         return X0, X0 
 
     if typ == "lk":
+        # Low rank
         core_tensor = np.random.uniform(0,1,[r for _ in range(dim)])
         arms = []
         tensor = core_tensor
@@ -196,7 +245,8 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None, 
         X = tensor + noise*np.sqrt((noise_level**2)*true_signal_mag/total_num)
         return X, tensor
 
-    if typ == "slk": 
+    if typ == "slk":
+        # Sparse low rank
         core_tensor = np.random.normal(0,1,[r for _ in range(dim)])
         arms = []
         tensor = core_tensor
@@ -212,6 +262,7 @@ def square_tensor_gen(n, r, dim = 3,  typ = 'id', noise_level = 0, seed = None, 
         return tensor, tensor0 
 
 def eval_rerr(X,X_hat,X0):
+    # evaluate the relative error = ||X- X_hat||_F/ ||X_0||_F
     error = X-X_hat
     return np.linalg.norm(error.reshape(np.size(error),1),'fro')/ \
     np.linalg.norm(X0.reshape(np.size(X0),1),'fro')
