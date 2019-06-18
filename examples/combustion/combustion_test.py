@@ -1,15 +1,9 @@
-import netCDF4 as nc
 import numpy as np
-import matplotlib.pyplot as plt 
 import pickle
-import tensorly
-import matplotlib.ticker as ticker
 import tensorsketch
 from tensorsketch.tensor_approx import TensorApprox
 import warnings
 warnings.filterwarnings('ignore')
-import scipy.io
-from tensorsketch.sketch import Sketch
 
 
 
