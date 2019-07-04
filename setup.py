@@ -1,4 +1,4 @@
-import setuptools 
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -13,13 +13,13 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/sunstat/SketchTensor",
     test_suite="nose.collector",
-    tests_require=['nose'], 
+    tests_require=['nose'],
     packages=setuptools.find_packages(),
     install_requires=[
         'numpy',
-        'scipy', 
-        'tensorly', 
-        'netCDF4', 
+        'scipy',
+        'tensorly',
+        'netCDF4',
         'matplotlib',
     ],
     classifiers=(
@@ -28,5 +28,3 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ),
 )
-
-
