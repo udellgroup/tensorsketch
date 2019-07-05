@@ -31,3 +31,4 @@ examples/combustion/data/*.pickle
 examples/demo
 tensorsketch/st_hosvd.ipynb
 examples/simulation/plots/aistats
+.eggs
