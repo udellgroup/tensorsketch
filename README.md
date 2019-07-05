@@ -1,4 +1,6 @@
-# Single-Pass Tensor Decomposition with Sketching
+# Low-Rank Tucker Approximation of a Tensor From Streaming Data
+
+See https://arxiv.org/abs/1904.10951
 
 ## Background
 
@@ -22,9 +24,9 @@ pip install -U tensorly
 
 ## Simulations 
 
-Please refer to [simulation_weather.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/weather/simulation_weather.ipynb) for simulation on synthetic data to understand the theoretical properties of tensor sketching. 
+Please refer to [journal_simulation.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/simulation/journal_simulation.ipynb) for simulation on synthetic data to understand the theoretical properties of tensor sketching. 
 
-To apply tensor sketching to real-world example, please refer to [simulation.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/simulation/simulation.ipynb) for the experiments on real-world weather data. In particular, [`run_realdata_frk`] evaluates the performance for HOOI (Higher Order Orthogonal Iteration), One-Pass sketching, Two-Pass sketching algorithms given the rank of the real data and the desired compression level. 
+To apply tensor sketching to real-world example, please refer to [journal_weather.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/) for the experiments on real-world weather data, and [combustion.ipynb](https://github.com/udellgroup/tensorsketch/blob/master/examples/combustion/combustion.ipynb) for combustion engine simulation data. In particular, [`run_realdata_frk`](https://github.com/udellgroup/tensorsketch/blob/master/examples/weather/simulation_weather.py) evaluates the performance for HOOI (Higher Order Orthogonal Iteration), One-Pass sketching, Two-Pass sketching algorithms given the rank of the real data and the desired compression level. 
 
 
 ## Local Package installation 
