@@ -141,7 +141,8 @@ def gprod(k, X, mode, seed=1):
 
 
 def sp0prod(k, X, mode, seed=1):
-    # Create a sketch of size k x I_(-mode) (Left mutliplication) and I_(mode) x k (Right multiplication)
+    # Create a sketch of size k x I_(-mode) (Left mutliplication) and
+    # I_(mode) x k (Right multiplication)
     '''
     Dimension reduction based on Tensor random projection (https://r2learning.github.io/assets/papers/CameraReadySubmission%2041.pdf)
     where each submatrix is sparse matrix with sparsity = 2/3

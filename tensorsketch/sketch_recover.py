@@ -6,6 +6,22 @@ from .util import random_matrix_generator
 from .sketch import Sketch
 from .util import generate_super_diagonal_tensor
 from .util import ssrft
+from tensorly.base import unfold, fold
+from sklearn.decomposition import TruncatedSVD
+from numpy.linalg import svd
+
+
+def st_hosvd(tensor, target_rank):
+    original_shape = tensor.shape
+    G = tensor
+    arms = []
+    core_tensor = None
+    for n in range(len(original_shape)):
+        G = unfold(G, n)
+        svd = TruncatedSVD(n_components=5, n_iter=7, random_state=42)
+
+
+
 
 
 class SketchTwoPassRecover(object):
