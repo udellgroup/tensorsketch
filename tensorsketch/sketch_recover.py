@@ -1,24 +1,28 @@
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
-from .util import RandomInfoBucket
-from .util import random_matrix_generator
-from .sketch import Sketch
-from .util import generate_super_diagonal_tensor
-from .util import ssrft
+from sketch import Sketch
+from util import square_tensor_gen
 from tensorly.base import unfold, fold
-from sklearn.decomposition import TruncatedSVD
-from numpy.linalg import svd
+from scipy.sparse.linalg import svds
 
 
 def st_hosvd(tensor, target_rank):
     original_shape = tensor.shape
     G = tensor
+    # G will finally be transformed into core in Tucker decomposition
+    if not isinstance(target_rank, list):
+        # if not list, repeat the number to a list
+        target_rank = [target_rank for _ in range(len(original_shape))]
     arms = []
-    core_tensor = None
     for n in range(len(original_shape)):
         G = unfold(G, n)
-        svd = TruncatedSVD(n_components=5, n_iter=7, random_state=42)
+        U, S, V = svds(G, k = target_rank[n])
+        arms.append(U)
+        print(f"U shape: {U.shape}, S shape: {S.shape}, V shape {V.shape}")
+        G = np.diag(S) @ V
+        G = fold(G, n, original_shape)
+    return G, arms
 
 
 
@@ -115,3 +119,11 @@ class SketchOnePassRecover(object):
         else:
             X_hat = eval('tl.tucker_to_tensor(self.core_tensor, self.arms)')
         return X_hat, self.arms, self.core_tensor
+
+def test_st_hosvd():
+    X, X0 = square_tensor_gen(20, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
+    # print(X)
+    st_hosvd(X, 3)
+
+if  __name__ == "__main__":
+    test_st_hosvd()

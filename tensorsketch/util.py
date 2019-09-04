@@ -186,7 +186,7 @@ def generate_super_diagonal_tensor(diagonal_elems, dim):
     return tl.tensor(tensor)
 
 
-def square_tensor_gen(n, r, dim=3, typ='id', noise_level=0, seed=None, sparse_factor=0.2):
+def square_tensor_gen(n, r, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2):
     '''
     :param n: size of the tensor generated n*n*...*n
     :param r: rank of the tensor or equivalently, the size of core tensor
