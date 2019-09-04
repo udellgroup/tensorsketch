@@ -2,13 +2,14 @@ import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
 from sketch import Sketch
-from util import square_tensor_gen
+from util import square_tensor_gen, eval_rerr
 from tensorly.base import unfold, fold
 from scipy.sparse.linalg import svds
 
 
 def st_hosvd(tensor, target_rank):
     original_shape = tensor.shape
+    transforming_shape = list(original_shape)
     G = tensor
     # G will finally be transformed into core in Tucker decomposition
     if not isinstance(target_rank, list):
@@ -21,7 +22,9 @@ def st_hosvd(tensor, target_rank):
         arms.append(U)
         print(f"U shape: {U.shape}, S shape: {S.shape}, V shape {V.shape}")
         G = np.diag(S) @ V
-        G = fold(G, n, original_shape)
+        print(G.shape)
+        transforming_shape[n] = target_rank[n]
+        G = fold(G, n, transforming_shape)
     return G, arms
 
 
@@ -114,16 +117,19 @@ class SketchOnePassRecover(object):
 
         for n in range(dim):
             self.arms.append(np.dot(Qs[n], factors[n]))
+            
         if eval_xhat:
-            X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
-        else:
-            X_hat = eval('tl.tucker_to_tensor(self.core_tensor, self.arms)')
+            X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
         return X_hat, self.arms, self.core_tensor
 
 def test_st_hosvd():
     X, X0 = square_tensor_gen(20, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
     # print(X)
-    st_hosvd(X, 3)
+    core, arms = st_hosvd(X, 3)
+    print(core.shape, arms[0].shape)
+    X_hat = tl.tucker_to_tensor((core, arms))
+    print(eval_rerr(X, X_hat, X))
+
 
 if  __name__ == "__main__":
     test_st_hosvd()
