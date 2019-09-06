@@ -1,12 +1,12 @@
 import numpy as np
 from scipy import fftpack
 import tensorly as tl
-from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr
-from .sketch import Sketch
+from util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr, st_hosvd
+from sketch import Sketch
 import time
 from tensorly.decomposition import tucker
-from .sketch_recover import SketchTwoPassRecover
-from .sketch_recover import SketchOnePassRecover
+from sketch_recover import SketchTwoPassRecover
+from sketch_recover import SketchOnePassRecover
 
 
 class TensorApprox(object):
@@ -26,9 +26,19 @@ class TensorApprox(object):
 
     def tensor_approx(self, method):
         start_time = time.time()
-        if method == "hooi":
+        if method == 'st_hosvd':
+            # print(self.X.shape)
+            # print(self.ranks)
+            running_time = time.time() - start_time
+            core_sketch = np.zeros(1)
+            arm_sketches = [[] for i in np.arange(len(self.X.shape))]
+            tucker_core, tucker_factors = st_hosvd(self.X, self.ranks)
+            X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
+            sketch_time = -1
+            recover_time = running_time
+        elif method == "hooi":
             tucker_core, tucker_factors = tucker(self.X, self.ranks, init='svd')
-            X_hat = tl.tucker_to_tensor(tucker_core, tucker_factors)
+            X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
             running_time = time.time() - start_time
             core_sketch = np.zeros(1)
             arm_sketches = [[] for i in np.arange(len(self.X.shape))]
@@ -46,6 +56,7 @@ class TensorApprox(object):
             sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, \
                             ss=self.ss, store_phis=self.store_phis, typ=self.rm_typ)
             arm_sketches, core_sketch = sketch.get_sketches()
+            print(arm_sketches[0].shape)
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
@@ -70,7 +81,7 @@ class TensorApprox(object):
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
             running_time = time.time() - start_time
             core_sketch = np.zeros(1)
-            arm_sketches = [[] for i in np.arange(len(self.X.shape))]
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
         elif method == "twopass":
@@ -100,7 +111,7 @@ if __name__ == '__main__':
 
     # Test it for square data
     n = 100
-    k = 10
+    k = 20
     rank = 5
     dim = 3
     s = 2 * k + 1
@@ -108,12 +119,12 @@ if __name__ == '__main__':
     ks = np.repeat(k, dim)
     ss = np.repeat(s, dim)
     tensor_shape = np.repeat(n, dim)
-    noise_level = 0.01
+    noise_level = 0.1
     gen_typ = 'lk'
     X, X0 = square_tensor_gen(n, rank, dim, gen_typ, \
                               noise_level, seed=1)
     tapprox1 = TensorApprox(X, ranks, ks, ss)
-    _, _, _, rerr, _ = tapprox1.tensor_approx("hooi")
+    _, _, _, rerr, _ = tapprox1.tensor_approx("st_hosvd")
     print(rerr)
     _, _, _, rerr, _ = tapprox1.tensor_approx("twopass")
     print(rerr)
@@ -122,6 +133,7 @@ if __name__ == '__main__':
 
     # Test it for data with unequal side length
 
+    """
     ranks = np.array((5, 10, 15))
     dim = 3
     ns = np.array((100, 200, 300))
@@ -140,9 +152,10 @@ if __name__ == '__main__':
     X = tensor + noise * np.sqrt((noise_level ** 2) * true_signal_mag / np.product \
         (np.prod(ns)))
     tapprox2 = TensorApprox(X, ranks, ks, ss)
-    _, _, _, rerr, _ = tapprox2.tensor_approx("hooi")
+    _, _, _, rerr, _ = tapprox2.tensor_approx("st_hosvd")
     print(rerr)
     _, _, _, rerr, _ = tapprox2.tensor_approx("twopass")
     print(rerr)
     _, _, _, rerr, _ = tapprox2.tensor_approx("onepass")
     print(rerr)
+    """

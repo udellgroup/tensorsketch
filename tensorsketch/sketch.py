@@ -4,7 +4,7 @@ from operator import mul
 from util import random_matrix_generator
 from util import RandomInfoBucket
 from util import square_tensor_gen
-from util import ssrft, ssrft_modeprod, gprod, sp0prod
+from util import ssrft, ssrft_modeprod, gprod, sp0prod, st_hosvd
 
 
 class Sketch(object):

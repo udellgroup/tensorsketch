@@ -1,6 +1,9 @@
 import numpy as np
 from scipy import fftpack
 import tensorly as tl
+from tensorly.base import unfold, fold
+from scipy.sparse.linalg import svds
+from collections.abc import Iterable
 
 tl.set_backend('numpy')
 
@@ -277,14 +280,37 @@ def eval_rerr(X, X_hat, X0):
            np.linalg.norm(X0.reshape(np.size(X0), 1), 'fro')
 
 
+# ST-HOSVD
+def st_hosvd(tensor, target_ranks):
+    original_shape = tensor.shape
+    transforming_shape = list(original_shape)
+    G = tensor
+    # G will finally be transformed into core in Tucker decomposition
+    if not isinstance(target_ranks, Iterable):
+        # if not iterable, repeat the number to a list
+        target_ranks = [target_ranks for _ in range(len(original_shape))]
+    arms = []
+    for n in range(len(original_shape)):
+        G = unfold(G, n)
+        U, S, V = svds(G, k=target_ranks[n])
+        arms.append(U)
+        # print(f"U shape: {U.shape}, S shape: {S.shape}, V shape {V.shape}")
+        G = np.diag(S) @ V
+        # print(G.shape)
+        transforming_shape[n] = target_ranks[n]
+        G = fold(G, n, transforming_shape)
+    return G, arms
+
+
+
 if __name__ == "__main__":
     tl.set_backend('numpy')
     X = np.arange(25).reshape((5, 5))
     Gmatrix = random_matrix_generator(3, 5, RandomInfoBucket())
-    print(np.dot(Gmatrix, X))
-    print(ssrft(3, X, mult="left").shape)
+    # print(np.dot(Gmatrix, X))
+    # print(ssrft(3, X, mult="left").shape)
     X, _ = square_tensor_gen(5, 3, dim=3, typ='id', noise_level=0.1)
-    print(sum(X - tl.fold(tl.unfold(X, 2), 2, X.shape)))
+    # print(sum(X - tl.fold(tl.unfold(X, 2), 2, X.shape)))
 
     Y = np.arange(120).reshape((3, 4, 10))
-    print(gprod(3, Y, 1))
+    # print(gprod(3, Y, 1))
