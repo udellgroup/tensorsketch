@@ -1,8 +1,8 @@
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
-from sketch import Sketch
-from util import square_tensor_gen, eval_rerr, st_hosvd
+from .sketch import Sketch
+from .util import square_tensor_gen, eval_rerr, st_hosvd
 from scipy.sparse.linalg import svds
 
 
@@ -71,7 +71,7 @@ class SketchOnePassRecover(object):
             phis.append(rm)
         return phis
 
-    def recover(self, mode='hooi'):
+    def recover(self, mode='st_hosvd'):
         '''
         Obtain the recovered tensor X_hat, core and arm tensor given the sketches
         using the one pass sketching algorithm 
@@ -95,7 +95,7 @@ class SketchOnePassRecover(object):
             self.core_tensor, factors = st_hosvd(self.core_tensor, target_ranks=self.ranks)
 
         for n in range(dim):
-            print(Qs[n].shape, factors[n].shape)
+            # print(Qs[n].shape, factors[n].shape)
             self.arms.append(np.dot(Qs[n], factors[n]))
 
         X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))

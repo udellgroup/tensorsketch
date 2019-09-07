@@ -1,12 +1,12 @@
 import numpy as np
 from scipy import fftpack
 import tensorly as tl
-from util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr, st_hosvd
-from sketch import Sketch
+from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr, st_hosvd
+from .sketch import Sketch
 import time
 from tensorly.decomposition import tucker
-from sketch_recover import SketchTwoPassRecover
-from sketch_recover import SketchOnePassRecover
+from .sketch_recover import SketchTwoPassRecover
+from .sketch_recover import SketchOnePassRecover
 
 
 class TensorApprox(object):
@@ -56,13 +56,13 @@ class TensorApprox(object):
             sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, \
                             ss=self.ss, store_phis=self.store_phis, typ=self.rm_typ)
             arm_sketches, core_sketch = sketch.get_sketches()
-            print(arm_sketches[0].shape)
+            # print(arm_sketches[0].shape)
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
-                                                   TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
-                                                   RandomInfoBucket(random_seed=self.random_seed), \
-                                                   sketch.get_phis())
+                                        TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
+                                        RandomInfoBucket(random_seed=self.random_seed), \
+                                        sketch.get_phis())
             X_hat, tucker_factors, tucker_core = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
@@ -84,6 +84,14 @@ class TensorApprox(object):
             arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
+        elif method == "st_hosvd":
+            core, tucker_factors = st_hosvd(self.X, self.ranks, init='svd')
+            X_hat = tl.tucker_to_tensor(core, tucker_factors)
+            running_time = time.time() - start_time
+            core_sketch = np.zeros(1)
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
+            sketch_time = -1
+            recover_time = running_time
         elif method == "twopass":
             sketch_time = time.time() - start_time
             start_time = time.time()
@@ -94,9 +102,9 @@ class TensorApprox(object):
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
-                                                   TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
-                                                   RandomInfoBucket(random_seed=self.random_seed), \
-                                                   sketch.get_phis())
+                                TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
+                                RandomInfoBucket(random_seed=self.random_seed), \
+                                sketch.get_phis())
             X_hat, _, _ = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
@@ -107,7 +115,7 @@ class TensorApprox(object):
         return X_hat, core_sketch, arm_sketches, rerr, (sketch_time, recover_time)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Test it for square data
     n = 100
