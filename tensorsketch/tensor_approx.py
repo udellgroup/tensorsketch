@@ -24,18 +24,20 @@ class TensorApprox(object):
         self.rm_typ = rm_typ
         self.store_phis = store_phis
 
-    def tensor_approx(self, method):
+    def in_memory_fix_rank_tensor_approx(self, method):
         start_time = time.time()
+
         if method == 'st_hosvd':
             # print(self.X.shape)
             # print(self.ranks)
-            running_time = time.time() - start_time
             core_sketch = np.zeros(1)
             arm_sketches = [[] for i in np.arange(len(self.X.shape))]
             tucker_core, tucker_factors = st_hosvd(self.X, self.ranks)
             X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
+            running_time = time.time() - start_time
             sketch_time = -1
             recover_time = running_time
+
         elif method == "hooi":
             tucker_core, tucker_factors = tucker(self.X, self.ranks, init='svd')
             X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
@@ -44,6 +46,7 @@ class TensorApprox(object):
             arm_sketches = [[] for i in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
+
         elif method == "twopass":
             sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, typ=self.rm_typ)
             arm_sketches, core_sketch = sketch.get_sketches()
@@ -52,6 +55,7 @@ class TensorApprox(object):
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, tucker_factors, tucker_core = sketch_two_pass.recover()
             recover_time = time.time() - start_time
+
         elif method == "onepass":
             sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, \
                             ss=self.ss, store_phis=self.store_phis, typ=self.rm_typ)
@@ -66,16 +70,23 @@ class TensorApprox(object):
             X_hat, tucker_factors, tucker_core = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
-            raise Exception("please use either of the three methods: hooi, twopass, onepass")
+            raise Exception("please use either of the three methods: "
+                            "st_hosvd, hooi, twopass, onepass")
         # Compute the the relative error when the true low rank tensor is unknown. 
         # Refer to simulation.py in case when the true low rank tensor is given. 
         rerr = eval_rerr(self.X, X_hat, self.X)
         return X_hat, (tucker_core, tucker_factors), (core_sketch, arm_sketches), rerr, (sketch_time, recover_time)
 
     def tensor_approx_sketch(self, sketch, method):
+        """
+        :param sketch: list of two elements, first is arm_sketches (list)
+        the second is the core sketch
+        :param method: name for the optimization method
+        :return:
+        """
         # Construct the approximation directly from sketch
         start_time = time.time()
-        [arm_sketches, core_sketch] = sketch
+        arm_sketches, core_sketch = sketch
         if method == "hooi":
             core, tucker_factors = tucker(self.X, self.ranks, init='svd')
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
@@ -84,20 +95,23 @@ class TensorApprox(object):
             arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
+
         elif method == "st_hosvd":
-            core, tucker_factors = st_hosvd(self.X, self.ranks, init='svd')
+            core, tucker_factors = st_hosvd(self.X, self.ranks)
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
             running_time = time.time() - start_time
             core_sketch = np.zeros(1)
             arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
+
         elif method == "twopass":
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, _, _ = sketch_two_pass.recover()
             recover_time = time.time() - start_time
+
         elif method == "onepass":
             sketch_time = time.time() - start_time
             start_time = time.time()
@@ -108,7 +122,8 @@ class TensorApprox(object):
             X_hat, _, _ = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
-            raise Exception("please use either of the three methods: hooi, twopass, onepass")
+            raise Exception("please use either of the three methods: "
+                            "st_hosvd, hooi, twopass, onepass")
         # Compute the the relative error when the true low rank tensor is unknown. 
         # Refer to simulation.py in case when the true low rank tensor is given. 
         rerr = eval_rerr(self.X, X_hat, self.X)
@@ -141,29 +156,3 @@ if __name__ == "__main__":
 
     # Test it for data with unequal side length
 
-    """
-    ranks = np.array((5, 10, 15))
-    dim = 3
-    ns = np.array((100, 200, 300))
-    ks = np.array((15, 20, 25))
-    ss = 2 * ks + 1
-    core_tensor = np.random.uniform(0, 1, ranks)
-    arms = []
-    tensor = core_tensor
-    for i in np.arange(dim):
-        arm = np.random.normal(0, 1, size=(ns[i], ranks[i]))
-        arm, _ = np.linalg.qr(arm)
-        arms.append(arm)
-        tensor = tl.tenalg.mode_dot(tensor, arm, mode=i)
-    true_signal_mag = np.linalg.norm(core_tensor) ** 2
-    noise = np.random.normal(0, 1, ns)
-    X = tensor + noise * np.sqrt((noise_level ** 2) * true_signal_mag / np.product \
-        (np.prod(ns)))
-    tapprox2 = TensorApprox(X, ranks, ks, ss)
-    _, _, _, rerr, _ = tapprox2.tensor_approx("st_hosvd")
-    print(rerr)
-    _, _, _, rerr, _ = tapprox2.tensor_approx("twopass")
-    print(rerr)
-    _, _, _, rerr, _ = tapprox2.tensor_approx("onepass")
-    print(rerr)
-    """

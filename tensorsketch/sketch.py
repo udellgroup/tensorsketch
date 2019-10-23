@@ -1,8 +1,54 @@
 import tensorly as tl
 import numpy as np
-from operator import mul
 from .util import random_matrix_generator, RandomInfoBucket, square_tensor_gen
-from .util import ssrft, ssrft_modeprod, gprod, sp0prod, st_hosvd
+from .util import ssrft_modeprod, gprod, sp0prod
+from .random_projection import random_matrix_generator, tensor_random_matrix_generator
+
+
+def fetch_arm_sketch(X, ks, tensor_proj=True, **kwargs_rg):
+    """
+    :param X: the tensor of dimension N
+    :param ks: array of size N
+    :param tensor_proj: True: use tensor random projection,
+    otherwise, use normal one
+    :param kwargs_rg:
+    :return: list of arm sketches
+    """
+    arm_sketches = []
+    omegas = []
+    for i, n in enumerate(X.shape):
+        shape = list(X.shape)
+        del shape[i]
+        if not tensor_proj:
+            omega = random_matrix_generator(shape, ks[i], **kwargs_rg)
+            arm_sketch = tl.unfold(X, mode=i) @ omega
+            arm_sketches.append(arm_sketch)
+            omegas.append(omega)
+        else:
+            omega = tensor_random_matrix_generator(shape, ks[i], **kwargs_rg)
+            arm_sketch = tl.unfold(X, mode=i) @ omega
+            arm_sketches.append(arm_sketch)
+            omegas.append(omega)
+    return arm_sketches, omegas
+
+
+
+def fetch_core_sketch(X, ss, **kwargs_rg):
+    """
+    :param X: the tensor of dimension N
+    :param ks: array of size N
+    :param tensor_proj: True: use tensor random projection,
+    otherwise, use normal one
+    :return: list of arm sketches
+    """
+    core_sketch = X
+    phis = []
+    shape = list(core_sketch.shape)
+    for mode, n in enumerate(X.shape):
+        phi = random_matrix_generator(shape[mode], ss[mode], **kwargs_rg)
+        phis.append(phi)
+        core_sketch = tl.tenalg.mode_dot(core_sketch, phi.transpose(), mode = mode)
+    return core_sketch,  phis
 
 
 class Sketch(object):
@@ -11,31 +57,33 @@ class Sketch(object):
     def sketch_arm_rm_generator(tensor_shape, ks, Rinfo_bucket):
         '''
         :param tensor_shape: shape of the tensor, an 1-d array
-        :param ks: k, the reduced dimension of the arm tensors, an 1-d array 
+        :param ks: k, the reduced dimension of the arm tensors, an 1-d array
         '''
         std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
         total_num = np.prod(tensor_shape)
         for n in range(len(tensor_shape)):
             n1 = total_num // tensor_shape[n]  # I_(-n)
-            # Construct the transposed matrix, because for some test matrices,  
-            # like sparse sign, the direction of the mutliplication matters. 
+            # Construct the transposed matrix, because for some test matrices,
+            # like sparse sign, the direction of the mutliplication matters.
             yield random_matrix_generator(ks[n], n1, Rinfo_bucket).T
 
     @staticmethod
     def sketch_core_rm_generator(tensor_shape, ss, Rinfo_bucket):
         '''
         :param tensor_shape: shape of the tensor, an 1-d array
-        :param ss: s, the reduced dimension of the core tensor, an 1-d array 
+        :param ss: s, the reduced dimension of the core tensor, an 1-d array
         '''
         std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
         for n in range(len(tensor_shape)):
             yield random_matrix_generator(ss[n], tensor_shape[n], Rinfo_bucket)
 
+
+
     def __init__(self, X, ks, random_seed, ss=[], typ='g', \
                  sparse_factor=0.1, std=1, store_phis=True):
         '''
         :param X: tensor being skeched
-        :param ks: k, the reduced dimension of the arm tensors, an 1-d array 
+        :param ks: k, the reduced dimension of the arm tensors, an 1-d array
         :param ss: At any index, the element of ss is greater than the element
          of kswhen ss = [], do not perform core sketch, that is, core_sketch == X
         :param random_seed: random_seed
@@ -104,51 +152,77 @@ class Sketch(object):
         return self.phis
 
 
+
+
+
 if __name__ == "__main__":
+
     tl.set_backend('numpy')
-    X, X0 = square_tensor_gen(10, 3, dim=3, typ='spd', noise_level=0.1)
-    print(tl.unfold(X, mode=1).shape)
-    tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[], typ='g', \
-                           sparse_factor=0.1)
-    arm_sketches, core_sketch = tensor_sketch.get_sketches()
-    print(len(arm_sketches))
-    for arm_sketch in arm_sketches:
-        print(arm_sketch)
-    print("ok")
-    print(X.shape)
-    print()
 
-    # =======================
-    tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[6, 6, 6], typ='g', \
-                           sparse_factor=0.1, store_phis=True)
-    arm_sketches, core_sketch = tensor_sketch.get_sketches()
-    print(len(arm_sketches))
-    for arm_sketch in arm_sketches:
-        print(arm_sketch)
-    print(core_sketch.shape[1])
 
-    # =======================
-    noise_level = 0.01
-    ranks = np.array((5, 10, 15))
-    dim = 3
-    ns = np.array((100, 200, 300))
-    ks = np.array((100, 200, 300))
-    ss = ks
-    core_tensor = np.random.uniform(0, 1, ranks)
-    arms = []
-    tensor = core_tensor
-    for i in np.arange(dim):
-        arm = np.random.normal(0, 1, size=(ns[i], ranks[i]))
-        arm, _ = np.linalg.qr(arm)
-        arms.append(arm)
-        tensor = tl.tenalg.mode_dot(tensor, arm, mode=i)
-    true_signal_mag = np.linalg.norm(core_tensor) ** 2
-    noise = np.random.normal(0, 1, ns)
-    X = tensor + noise * np.sqrt((noise_level ** 2) * true_signal_mag / np.product \
-        (np.prod(ns)))
+    def test_arm_sketches():
+        X, X0 = square_tensor_gen(50, 3, dim=3, typ='spd', noise_level=0.1)
+        arms, omegas = fetch_arm_sketch(X, [10, 10, 10], tensor_proj=True, typ='g')
+        print(f"length of arms is {len(arms)} and length of omega is {len(omegas)}")
+        print(arms[0].shape)
+        print(omegas[0].shape)
 
-    tensor_sketch = Sketch(X, ks, random_seed=1, ss=ss, typ='g', \
-                           sparse_factor=0.1, store_phis=True)
-    arm_sketches, core_sketch = tensor_sketch.get_sketches()
+    # test_arm_sketches()
 
-    print(arm_sketches, core_sketch)
+    def test_core_sketch():
+        X, X0 = square_tensor_gen(50, 3, dim=3, typ='spd', noise_level=0.1)
+        core_sketch, phis = fetch_core_sketch(X, [21, 21, 21], typ='g')
+        print(core_sketch.shape)
+
+
+    test_core_sketch()
+
+
+
+"""
+print(tl.unfold(X, mode=1).shape)
+tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[], typ='g', \
+                       sparse_factor=0.1)
+arm_sketches, core_sketch = tensor_sketch.get_sketches()
+print(len(arm_sketches))
+for arm_sketch in arm_sketches:
+    print(arm_sketch)
+print("ok")
+print(X.shape)
+print()
+
+# =======================
+tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[6, 6, 6], typ='g', \
+                       sparse_factor=0.1, store_phis=True)
+arm_sketches, core_sketch = tensor_sketch.get_sketches()
+print(len(arm_sketches))
+for arm_sketch in arm_sketches:
+    print(arm_sketch)
+print(core_sketch.shape[1])
+
+# =======================
+noise_level = 0.01
+ranks = np.array((5, 10, 15))
+dim = 3
+ns = np.array((100, 200, 300))
+ks = np.array((100, 200, 300))
+ss = ks
+core_tensor = np.random.uniform(0, 1, ranks)
+arms = []
+tensor = core_tensor
+for i in np.arange(dim):
+    arm = np.random.normal(0, 1, size=(ns[i], ranks[i]))
+    arm, _ = np.linalg.qr(arm)
+    arms.append(arm)
+    tensor = tl.tenalg.mode_dot(tensor, arm, mode=i)
+true_signal_mag = np.linalg.norm(core_tensor) ** 2
+noise = np.random.normal(0, 1, ns)
+X = tensor + noise * np.sqrt((noise_level ** 2) * true_signal_mag / np.product \
+    (np.prod(ns)))
+
+tensor_sketch = Sketch(X, ks, random_seed=1, ss=ss, typ='g', \
+                       sparse_factor=0.1, store_phis=True)
+arm_sketches, core_sketch = tensor_sketch.get_sketches()
+
+print(arm_sketches, core_sketch)
+"""

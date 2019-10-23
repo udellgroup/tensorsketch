@@ -7,6 +7,7 @@ from scipy.sparse.linalg import svds
 
 
 class SketchTwoPassRecover(object):
+
     def __init__(self, X, arm_sketches, ranks):
         tl.set_backend('numpy')
         self.arms = []
@@ -15,7 +16,7 @@ class SketchTwoPassRecover(object):
         self.arm_sketches = arm_sketches
         self.ranks = ranks
 
-    def recover(self, mode='st_hosvd'):
+    def in_memory_fix_rank_recover(self, mode='st_hosvd'):
         '''
         Obtain the recovered tensor X_hat, core and arm tensor given the sketches
         using the two pass sketching algorithm 
@@ -43,6 +44,29 @@ class SketchTwoPassRecover(object):
             self.arms.append(np.dot(Qs[n], factors[n]))
         X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
         return X_hat, self.arms, self.core_tensor
+
+    def fix_rank_recover(self):
+        '''
+        Obtain the recovered tensor X_hat, core and arm tensor given the sketches
+        using the two pass sketching algorithm
+        '''
+        # get orthogonal basis for each arm
+        Qs = []
+        for i, sketch in enumerate(self.arm_sketches):
+            Q, _ = np.linalg.qr(sketch)
+            Qs.append(Q[:self.rank[i]])
+
+        # get the core_(smaller) to implement tucker
+        self.core_tensor = self.X
+        N = len(self.X.shape)
+        for mode_n in range(N):
+            Q = Qs[mode_n]
+            self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
+
+        self.arms = Qs
+        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
+        return X_hat, self.arms, self.core_tensor
+
 
 
 class SketchOnePassRecover(object):
@@ -91,20 +115,20 @@ class SketchOnePassRecover(object):
                                                   np.linalg.pinv(np.dot(phis[mode_n], Qs[mode_n])), mode=mode_n)
         if mode == 'hooi':
             self.core_tensor, factors = tucker(self.core_tensor, ranks=self.ranks)
+
         elif mode == 'st_hosvd':
             self.core_tensor, factors = st_hosvd(self.core_tensor, target_ranks=self.ranks)
 
         for n in range(dim):
-            # print(Qs[n].shape, factors[n].shape)
             self.arms.append(np.dot(Qs[n], factors[n]))
 
         X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
 
         return X_hat, self.arms, self.core_tensor
 
+
 def test_st_hosvd():
     X, X0 = square_tensor_gen(20, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
-    # print(X)
     core, arms = st_hosvd(X, 3)
     print(core.shape, arms[0].shape)
     X_hat = tl.tucker_to_tensor((core, arms))

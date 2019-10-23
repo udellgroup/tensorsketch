@@ -6,6 +6,7 @@ from tensorsketch import util
 import time
 from tensorly.decomposition import tucker
 from tensorsketch.tensor_approx import TensorApprox
+from tensorsketch.util import square_tensor_gen, RandomInfoBucket
 
 
 class Simulation(object):
@@ -27,20 +28,20 @@ class Simulation(object):
         self.rm_typ = rm_typ
 
     def run_sim(self):
-        X, X0 = tensorsketch.util.square_tensor_gen(self.n, self.rank, dim=self.dim, typ=self.gen_typ, \
+        X, X0 = square_tensor_gen(self.n, self.rank, dim=self.dim, typ=self.gen_typ, \
                                                     noise_level=self.noise_level, seed=self.random_seed)
         ranks = [self.rank for _ in range(self.dim)]
         ss = [self.s for _ in range(self.dim)]
         ks = [self.k for _ in range(self.dim)]
-        tapprox = tensorsketch.tensor_approx.TensorApprox(X, ranks, ks=ks, \
+        tapprox = TensorApprox(X, ranks, ks=ks, \
                                                           ss=ss, random_seed=1, rm_typ=self.rm_typ, store_phis=True)
-        X_hat_hooi, _, _, _, time_hooi = tapprox.tensor_approx('hooi')
+        X_hat_st_hosvd, _, _, _, time_st_hosvd = tapprox.tensor_approx('st_hosvd')
         X_hat_twopass, _, _, _, time_twopass = tapprox.tensor_approx('twopass')
         X_hat_onepass, _, _, _, time_onepass = tapprox.tensor_approx('onepass')
-        rerr_hooi = tensorsketch.util.eval_rerr(X, X_hat_hooi, X0)
+        rerr_st_hosvd = tensorsketch.util.eval_rerr(X, X_hat_st_hosvd, X0)
         rerr_twopass = tensorsketch.util.eval_rerr(X, X_hat_twopass, X0)
         rerr_onepass = tensorsketch.util.eval_rerr(X, X_hat_onepass, X0)
-        return (rerr_hooi, rerr_twopass, rerr_onepass), (time_hooi, time_twopass, time_onepass)
+        return (rerr_st_hosvd, rerr_twopass, rerr_onepass), (time_st_hosvd, time_twopass, time_onepass)
 
 
 import matplotlib
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     noise_level = 0.01
     gen_typ = 'lk'
 
-    Rinfo_bucket = tensorsketch.util.RandomInfoBucket(random_seed=1)
+    Rinfo_bucket = RandomInfoBucket(random_seed=1)
     noise_levels = (np.float(10) ** (np.arange(-10, 2, 2)))
     hooi_rerr = np.zeros(len(noise_levels))
     two_pass_rerr = np.zeros(len(noise_levels))

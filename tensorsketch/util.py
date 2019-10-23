@@ -9,11 +9,12 @@ tl.set_backend('numpy')
 
 
 class TensorInfoBucket(object):
-    def __init__(self, tensor_shape, ks, ranks, ss=[]):
+    def __init__(self, tensor_shape, ks, ranks, ss):
         '''
         Information of the original tensor X
-        :k,s: integer
+        :ks: list of value of k for sketch
         :ranks: n-darray for the ranks of X
+        : ss : list of value of s for sketch
         '''
         self.tensor_shape = tensor_shape
         self.ks = ks
@@ -273,11 +274,20 @@ def square_tensor_gen(n, r, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_
         return tensor, tensor0
 
 
-def eval_rerr(X, X_hat, X0):
-    # evaluate the relative error = ||X- X_hat||_F/ ||X_0||_F
+def eval_rerr(X, X_hat, X0=None):
+    """
+    :param X: tensor, X0 or X0+noise
+    :param X_hat: output for apporoximation
+    :param X0: true signal, tensor
+    :return: the relative error = ||X- X_hat||_F/ ||X_0||_F
+    """
+    if X0:
+        error = X0 - X_hat
+        return np.linalg.norm(error.reshape(np.size(error), 1), 'fro') / \
+           np.linalg.norm(X0.reshape(np.size(X0), 1), 'fro')
     error = X - X_hat
     return np.linalg.norm(error.reshape(np.size(error), 1), 'fro') / \
-           np.linalg.norm(X0.reshape(np.size(X0), 1), 'fro')
+           np.linalg.norm(X0.reshape(np.size(X), 1), 'fro')
 
 
 # ST-HOSVD
