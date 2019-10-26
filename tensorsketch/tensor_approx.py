@@ -2,7 +2,7 @@ import numpy as np
 from scipy import fftpack
 import tensorly as tl
 from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr, st_hosvd
-from .sketch import Sketch
+from .sketch import fetch_arm_sketch, fetch_core_sketch
 import time
 from tensorly.decomposition import tucker
 from .sketch_recover import SketchTwoPassRecover
@@ -31,7 +31,7 @@ class TensorApprox(object):
             # print(self.X.shape)
             # print(self.ranks)
             core_sketch = np.zeros(1)
-            arm_sketches = [[] for i in np.arange(len(self.X.shape))]
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             tucker_core, tucker_factors = st_hosvd(self.X, self.ranks)
             X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
             running_time = time.time() - start_time
@@ -47,26 +47,24 @@ class TensorApprox(object):
             sketch_time = -1
             recover_time = running_time
 
-        elif method == "twopass":
-            sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, typ=self.rm_typ)
-            arm_sketches, core_sketch = sketch.get_sketches()
+        elif method == "two_pass":
+            arm_sketches = fetch_arm_sketch(self.X, self.ks, typ=self.rm_typ)
+            # core_sketch = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, tucker_factors, tucker_core = sketch_two_pass.recover()
             recover_time = time.time() - start_time
 
-        elif method == "onepass":
-            sketch = Sketch(self.X, self.ks, random_seed=self.random_seed, \
-                            ss=self.ss, store_phis=self.store_phis, typ=self.rm_typ)
-            arm_sketches, core_sketch = sketch.get_sketches()
+        elif method == "one_pass":
+            arm_sketches = fetch_arm_sketch(self.X, self.ks, typ=self.rm_typ)
+            core_sketch, phis = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
             # print(arm_sketches[0].shape)
             sketch_time = time.time() - start_time
             start_time = time.time()
-            sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
-                                        TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
-                                        RandomInfoBucket(random_seed=self.random_seed), \
-                                        sketch.get_phis())
+            sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch,
+                                        TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss),
+                                        RandomInfoBucket(random_seed=self.random_seed), phis)
             X_hat, tucker_factors, tucker_core = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
@@ -77,7 +75,8 @@ class TensorApprox(object):
         rerr = eval_rerr(self.X, X_hat, self.X)
         return X_hat, (tucker_core, tucker_factors), (core_sketch, arm_sketches), rerr, (sketch_time, recover_time)
 
-    def tensor_approx_sketch(self, sketch, method):
+
+    def low_rank_tensor_approx_sketch(self, sketch, method):
         """
         :param sketch: list of two elements, first is arm_sketches (list)
         the second is the core sketch

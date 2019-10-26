@@ -12,7 +12,8 @@ def fetch_arm_sketch(X, ks, tensor_proj=True, **kwargs_rg):
     :param tensor_proj: True: use tensor random projection,
     otherwise, use normal one
     :param kwargs_rg:
-    :return: list of arm sketches
+    :return: list of two, first element is list of arm sketches
+    and the second one is list of random matrices with size I_n\times k_n
     """
     arm_sketches = []
     omegas = []
@@ -39,7 +40,8 @@ def fetch_core_sketch(X, ss, **kwargs_rg):
     :param ks: array of size N
     :param tensor_proj: True: use tensor random projection,
     otherwise, use normal one
-    :return: list of arm sketches
+    :return: [core_sketch:s_n\times s_n ...\times s_n,
+    list of sketches phis, s_n\times I_n]
     """
     core_sketch = X
     phis = []
@@ -49,109 +51,6 @@ def fetch_core_sketch(X, ss, **kwargs_rg):
         phis.append(phi)
         core_sketch = tl.tenalg.mode_dot(core_sketch, phi.transpose(), mode = mode)
     return core_sketch,  phis
-
-
-class Sketch(object):
-
-    @staticmethod
-    def sketch_arm_rm_generator(tensor_shape, ks, Rinfo_bucket):
-        '''
-        :param tensor_shape: shape of the tensor, an 1-d array
-        :param ks: k, the reduced dimension of the arm tensors, an 1-d array
-        '''
-        std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
-        total_num = np.prod(tensor_shape)
-        for n in range(len(tensor_shape)):
-            n1 = total_num // tensor_shape[n]  # I_(-n)
-            # Construct the transposed matrix, because for some test matrices,
-            # like sparse sign, the direction of the mutliplication matters.
-            yield random_matrix_generator(ks[n], n1, Rinfo_bucket).T
-
-    @staticmethod
-    def sketch_core_rm_generator(tensor_shape, ss, Rinfo_bucket):
-        '''
-        :param tensor_shape: shape of the tensor, an 1-d array
-        :param ss: s, the reduced dimension of the core tensor, an 1-d array
-        '''
-        std, typ, random_seed, sparse_factor = Rinfo_bucket.get_info()
-        for n in range(len(tensor_shape)):
-            yield random_matrix_generator(ss[n], tensor_shape[n], Rinfo_bucket)
-
-
-
-    def __init__(self, X, ks, random_seed, ss=[], typ='g', \
-                 sparse_factor=0.1, std=1, store_phis=True):
-        '''
-        :param X: tensor being skeched
-        :param ks: k, the reduced dimension of the arm tensors, an 1-d array
-        :param ss: At any index, the element of ss is greater than the element
-         of kswhen ss = [], do not perform core sketch, that is, core_sketch == X
-        :param random_seed: random_seed
-        :param sparse_factor: only typ == 'sp', p matters representing the
-         sparse factor
-        '''
-        tl.set_backend('numpy')
-        self.X = X
-        self.N = len(X.shape)
-        self.ss = ss
-        self.ks = ks
-        self.typ = typ
-        self.sparse_factor = sparse_factor
-        self.arm_sketches = []
-        self.random_seed = random_seed
-        self.core_sketch = X
-        self.tensor_shape = X.shape
-        self.phis = []
-        self.std = std
-
-        # set the random seed for following procedure
-        np.random.seed(random_seed)
-        Rinfo_bucket = RandomInfoBucket(std=self.std, typ=self.typ,
-                                        random_seed=self.random_seed, sparse_factor=self.sparse_factor)
-
-        if self.typ == "ssrft":
-            for i in range(len(X.shape)):
-                self.arm_sketches.append(ssrft_modeprod(self.ks[i], self.X, i, \
-                                                        mult="right", seed=self.random_seed, fold=False))
-        elif self.typ == "gprod":
-            for i in range(len(X.shape)):
-                self.arm_sketches.append(gprod(self.ks[i], self.X, i, \
-                                               seed=self.random_seed))
-        elif self.typ == "sp0prod":
-            for i in range(len(X.shape)):
-                self.arm_sketches.append(sp0prod(self.ks[i], self.X, i, \
-                                                 seed=self.random_seed))
-        else:
-            rm_generator = Sketch.sketch_arm_rm_generator(self.tensor_shape, \
-                                                          self.ks, Rinfo_bucket)
-            mode_n = 0
-            for rm in rm_generator:
-                self.arm_sketches.append(np.dot(tl.unfold(self.X, mode=mode_n), rm))
-                mode_n += 1
-
-        if self.ss != []:
-            if self.typ == "gprod" or self.typ == "ssrft" or self.typ == "sp0prod":
-                Rinfo_bucket = RandomInfoBucket(self.std, "g", \
-                                                self.random_seed, sparse_factor=self.sparse_factor)
-            rm_generator = Sketch.sketch_core_rm_generator(self.tensor_shape, \
-                                                           self.ss, Rinfo_bucket)
-            mode_n = 0
-
-            for rm in rm_generator:
-                self.phis.append(rm)
-                self.core_sketch = tl.tenalg.mode_dot(self.core_sketch, rm, \
-                                                      mode=mode_n)
-                mode_n += 1
-            if not store_phis:
-                self.phis = []
-
-    def get_sketches(self):
-        return self.arm_sketches, self.core_sketch
-
-    def get_phis(self):
-        return self.phis
-
-
 
 
 

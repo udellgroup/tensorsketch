@@ -1,7 +1,7 @@
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
-from .sketch import Sketch
+from .sketch import fetch_arm_sketch, fetch_core_sketch
 from .util import square_tensor_gen, eval_rerr, st_hosvd
 from scipy.sparse.linalg import svds
 
