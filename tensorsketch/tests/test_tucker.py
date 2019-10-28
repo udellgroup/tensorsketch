@@ -7,8 +7,8 @@ from ..util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_r
 from ..sketch import Sketch
 import time
 from tensorly.decomposition import tucker
-from ..sketch_recover import SketchTwoPassRecover
-from ..sketch_recover import SketchOnePassRecover
+from ..recover_from_sketches import SketchTwoPassRecover
+from ..recover_from_sketches import SketchOnePassRecover
 from sklearn.utils.extmath import randomized_svd
 
 

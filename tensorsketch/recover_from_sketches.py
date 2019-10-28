@@ -1,3 +1,20 @@
+#######################
+#                     #
+#  Yiming Sun         #
+#  2019               #
+#                     #
+#######################
+
+"""
+This file contains class
+to return an approximation from
+sketches. Two pass algorithm also need the original
+tensor while one pass algorithm requires
+"""
+
+
+
+
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
@@ -7,11 +24,13 @@ from scipy.sparse.linalg import svds
 
 
 class SketchTwoPassRecover(object):
+    """
+    return a low rank approximation from sketches(arm sketches only here)
+    """
 
     def __init__(self, X, arm_sketches, ranks):
         tl.set_backend('numpy')
         self.arms = []
-        self.core_tensor = None
         self.X = X
         self.arm_sketches = arm_sketches
         self.ranks = ranks
@@ -71,48 +90,31 @@ class SketchTwoPassRecover(object):
 
 class SketchOnePassRecover(object):
 
-    def __init__(self, arm_sketches, core_sketch, Tinfo_bucket, Rinfo_bucket, \
-                 phis=[], rm_typ="g"):
+    def __init__(self, X, arm_sketches, core_sketch, phis, ranks):
         tl.set_backend('numpy')
         self.arms = []
         self.core_tensor = None
         self.arm_sketches = arm_sketches
         # Note get_info extract some extraneous information
-        self.tensor_shape, self.ks, self.ranks, self.ss = Tinfo_bucket.get_info()
-        self.Rinfo_bucket = Rinfo_bucket
         self.phis = phis
         self.core_sketch = core_sketch
-        self.rm_typ = rm_typ
+        self.ranks = ranks
 
-    def get_phis(self):
-        '''
-        Obtain phis from the sketch when phis is not stored
-        '''
-        phis = []
-        rm_generator = Sketch.sketch_core_rm_generator(self.tensor_shape, self.ss, \
-                                                       self.Rinfo_bucket)
-        for rm in rm_generator:
-            phis.append(rm)
-        return phis
 
-    def recover(self, mode='st_hosvd'):
+    def in_memory_fix_rank_recover(self, mode='st_hosvd'):
         '''
         Obtain the recovered tensor X_hat, core and arm tensor given the sketches
         using the one pass sketching algorithm 
         '''
-        if self.phis == []:
-            phis = self.get_phis()
-        else:
-            phis = self.phis
         Qs = []
         for arm_sketch in self.arm_sketches:
             Q, _ = np.linalg.qr(arm_sketch)
             Qs.append(Q)
         self.core_tensor = self.core_sketch
-        dim = len(self.tensor_shape)
+        dim = len(self.X.shape)
         for mode_n in range(dim):
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
-                                                  np.linalg.pinv(np.dot(phis[mode_n], Qs[mode_n])), mode=mode_n)
+                                                  np.linalg.pinv(np.dot(self.phis[mode_n], Qs[mode_n])), mode=mode_n)
         if mode == 'hooi':
             self.core_tensor, factors = tucker(self.core_tensor, ranks=self.ranks)
 

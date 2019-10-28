@@ -5,8 +5,8 @@ from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_re
 from .sketch import fetch_arm_sketch, fetch_core_sketch
 import time
 from tensorly.decomposition import tucker
-from .sketch_recover import SketchTwoPassRecover
-from .sketch_recover import SketchOnePassRecover
+from .recover_from_sketches import SketchTwoPassRecover
+from .recover_from_sketches import SketchOnePassRecover
 
 
 class TensorApprox(object):
