@@ -3,6 +3,7 @@ import numpy as np
 from .util import random_matrix_generator, RandomInfoBucket, square_tensor_gen
 from .util import ssrft_modeprod, gprod, sp0prod
 from .random_projection import random_matrix_generator, tensor_random_matrix_generator
+from sklearn.decomposition import TruncatedSVD
 
 
 def fetch_arm_sketch(X, ks, tensor_proj=True, **kwargs_rg):

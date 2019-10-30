@@ -22,8 +22,6 @@ from .sketch import fetch_arm_sketch, fetch_core_sketch
 from .util import square_tensor_gen, eval_rerr, st_hosvd
 from scipy.sparse.linalg import svds
 
-
-
 def check_sketch_size_valid(arm_sketches, core_sketch, ranks, typ='i'):
     """
     :param arm_sketches:  arm_sketch (I_n k_n)
@@ -93,10 +91,12 @@ class SketchTwoPassRecover(object):
         using the two pass sketching algorithm
         '''
         # get orthogonal basis for each arm
+
         Qs = []
         for i, sketch in enumerate(self.arm_sketches):
-            Q, _ = np.linalg.qr(sketch)
-            Qs.append(Q[:self.rank[i]])
+            # truncated svd
+            u, _, _ = svds(sketch, self.ranks[i])
+            Qs.append(u)
 
         # get the core_(smaller) to implement tucker
         self.core_tensor = self.X
@@ -108,9 +108,6 @@ class SketchTwoPassRecover(object):
         self.arms = Qs
         X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
         return X_hat, self.arms, self.core_tensor
-
-
-
 
 
 
@@ -160,9 +157,22 @@ class SketchOnePassRecover(object):
         return X_hat, self.arms, self.core_tensor
 
     def fix_rank_recover(self):
+
         check_sketch_size_valid(self.arm_sketches, self.core_sketch, self.ranks, typ='f')
+        Qs = []
+        for i, sketch in enumerate(self.arm_sketches):
+            # truncated svd
+            u, _, _ = svds(sketch, self.ranks[i])
+            Qs.append(u)
+        self.core_tensor = self.core_sketch
+        dim = len(self.X.shape)
+        for mode_n in range(dim):
+            u, _, _ = svds(sketch, self.ranks[i])
+            self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
+                            np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
 
-
+        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
+        return X_hat, self.arms, self.core_tensor
 
 
 
