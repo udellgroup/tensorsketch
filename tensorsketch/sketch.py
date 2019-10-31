@@ -59,7 +59,6 @@ if __name__ == "__main__":
 
     tl.set_backend('numpy')
 
-
     def test_arm_sketches():
         X, X0 = square_tensor_gen(50, 3, dim=3, typ='spd', noise_level=0.1)
         arms, omegas = fetch_arm_sketch(X, [10, 10, 10], tensor_proj=True, typ='g')
@@ -67,62 +66,13 @@ if __name__ == "__main__":
         print(arms[0].shape)
         print(omegas[0].shape)
 
-    # test_arm_sketches()
+    test_arm_sketches()
 
     def test_core_sketch():
         X, X0 = square_tensor_gen(50, 3, dim=3, typ='spd', noise_level=0.1)
         core_sketch, phis = fetch_core_sketch(X, [21, 21, 21], typ='g')
         print(core_sketch.shape)
 
-
     test_core_sketch()
 
 
-
-"""
-print(tl.unfold(X, mode=1).shape)
-tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[], typ='g', \
-                       sparse_factor=0.1)
-arm_sketches, core_sketch = tensor_sketch.get_sketches()
-print(len(arm_sketches))
-for arm_sketch in arm_sketches:
-    print(arm_sketch)
-print("ok")
-print(X.shape)
-print()
-
-# =======================
-tensor_sketch = Sketch(X, [5, 5, 5], random_seed=1, ss=[6, 6, 6], typ='g', \
-                       sparse_factor=0.1, store_phis=True)
-arm_sketches, core_sketch = tensor_sketch.get_sketches()
-print(len(arm_sketches))
-for arm_sketch in arm_sketches:
-    print(arm_sketch)
-print(core_sketch.shape[1])
-
-# =======================
-noise_level = 0.01
-ranks = np.array((5, 10, 15))
-dim = 3
-ns = np.array((100, 200, 300))
-ks = np.array((100, 200, 300))
-ss = ks
-core_tensor = np.random.uniform(0, 1, ranks)
-arms = []
-tensor = core_tensor
-for i in np.arange(dim):
-    arm = np.random.normal(0, 1, size=(ns[i], ranks[i]))
-    arm, _ = np.linalg.qr(arm)
-    arms.append(arm)
-    tensor = tl.tenalg.mode_dot(tensor, arm, mode=i)
-true_signal_mag = np.linalg.norm(core_tensor) ** 2
-noise = np.random.normal(0, 1, ns)
-X = tensor + noise * np.sqrt((noise_level ** 2) * true_signal_mag / np.product \
-    (np.prod(ns)))
-
-tensor_sketch = Sketch(X, ks, random_seed=1, ss=ss, typ='g', \
-                       sparse_factor=0.1, store_phis=True)
-arm_sketches, core_sketch = tensor_sketch.get_sketches()
-
-print(arm_sketches, core_sketch)
-"""

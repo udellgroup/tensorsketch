@@ -1,7 +1,7 @@
 #######################
 #                     *
 #  Yiming Sun         *
-#  2019               *
+#  11/2019            *
 #                     *
 #######################
 
@@ -11,8 +11,6 @@ to return an approximation from
 sketches. Two pass algorithm also need the original
 tensor while one pass algorithm requires
 """
-
-
 
 
 import numpy as np
@@ -34,7 +32,7 @@ def check_sketch_size_valid(arm_sketches, core_sketch, ranks, typ='i'):
     kk = [arm_sketch.shape[1] for arm_sketch in arm_sketches]
     flag = []
     for i, s in enumerate(ss):
-        if typ == 'i'
+        if typ == 'i':
             flag.append((s > ranks[i]) & (s>kk[i]) & (kk[i]>ranks[i]))
         elif typ == 'f':
             flag.append((s > ranks[i]) & (kk[i] > ranks[i]))
@@ -64,12 +62,12 @@ class SketchTwoPassRecover(object):
         # get orthogonal basis for each arm
         Qs = []
         for sketch in self.arm_sketches:
-            Q, _ = np.linalg.qr(sketch)
+            Q, _ = np.linalg.qr(np.array(sketch))
             Qs.append(Q)
 
         # get the core_(smaller) to implement tucker
         self.core_tensor = self.X
-        N = len(self.X.shape)
+        N = len(self.arm_sketches)
         for mode_n in range(N):
             Q = Qs[mode_n]
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
@@ -78,12 +76,11 @@ class SketchTwoPassRecover(object):
         elif mode == 'st_hosvd':
             self.core_tensor, factors = st_hosvd(self.core_tensor, target_ranks=self.ranks)
 
-
         # arm[n] = Q.T*factors[n]
         for n in range(len(factors)):
             self.arms.append(np.dot(Qs[n], factors[n]))
-        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
-        return X_hat, self.arms, self.core_tensor
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        return X_hat, self.core_tensor, self.arms
 
     def fix_rank_recover(self):
         '''
@@ -106,16 +103,15 @@ class SketchTwoPassRecover(object):
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
 
         self.arms = Qs
-        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
-        return X_hat, self.arms, self.core_tensor
-
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        return X_hat, self.core_tensor, self.arms
 
 
 
 class SketchOnePassRecover(object):
 
 
-    def __init__(self, X, arm_sketches, core_sketch, phis, ranks):
+    def __init__(self, core_sketch, arm_sketches, phis, ranks):
         tl.set_backend('numpy')
         self.arms = []
         self.core_tensor = None
@@ -139,22 +135,23 @@ class SketchOnePassRecover(object):
             Q, _ = np.linalg.qr(arm_sketch)
             Qs.append(Q)
         self.core_tensor = self.core_sketch
-        dim = len(self.X.shape)
-        for mode_n in range(dim):
+        # N: order of tensor
+        N = len(self.arm_sketches)
+        for mode_n in range(N):
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
-                                                  np.linalg.pinv(np.dot(self.phis[mode_n], Qs[mode_n])), mode=mode_n)
+                                                  np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
         if mode == 'hooi':
             self.core_tensor, factors = tucker(self.core_tensor, ranks=self.ranks)
 
         elif mode == 'st_hosvd':
             self.core_tensor, factors = st_hosvd(self.core_tensor, target_ranks=self.ranks)
 
-        for n in range(dim):
-            self.arms.append(np.dot(Qs[n], factors[n]))
+        for mode_n in range(N):
+            self.arms.append(np.dot(Qs[mode_n], factors[mode_n]))
 
-        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
 
-        return X_hat, self.arms, self.core_tensor
+        return X_hat, self.core_tensor, self.arms
 
     def fix_rank_recover(self):
 
@@ -165,24 +162,48 @@ class SketchOnePassRecover(object):
             u, _, _ = svds(sketch, self.ranks[i])
             Qs.append(u)
         self.core_tensor = self.core_sketch
-        dim = len(self.X.shape)
-        for mode_n in range(dim):
-            u, _, _ = svds(sketch, self.ranks[i])
+        N = len(self.arm_sketches)
+        for mode_n in range(N):
+            u, _, _ = svds(sketch, self.ranks[mode_n])
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
                             np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
-
-        X_hat = tl.tucker_to_tensor((self.core_tensor, self.arms))
-        return X_hat, self.arms, self.core_tensor
-
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        return X_hat, self.core_tensor, self.arms
 
 
 def test_st_hosvd():
     X, X0 = square_tensor_gen(20, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
     core, arms = st_hosvd(X, 3)
     print(core.shape, arms[0].shape)
-    X_hat = tl.tucker_to_tensor((core, arms))
+    # tucker_to_tensor core tensor and list of matrix
+    X_hat = tl.tucker_to_tensor(core, arms)
+    # print(f"original shape {X.shape} and the approximation shape is {X_hat.shape}")
+    print(eval_rerr(X, X_hat, X))
+
+
+def test_two_pass_in_memory():
+    X, X0 = square_tensor_gen(100, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
+    arm_sketches, _ = fetch_arm_sketch(X, [10]*3, tensor_proj=True)
+    two_pass_sketch = SketchTwoPassRecover(X, arm_sketches, [3]*3)
+    X_hat, core_tensor, arm_sketches = two_pass_sketch.in_memory_fix_rank_recover(mode='st_hosvd')
+    print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = two_pass_sketch.fix_rank_recover()
+    print(eval_rerr(X, X_hat, X))
+
+
+def test_one_pass_in_memory():
+    X, X0 = square_tensor_gen(100, 3, dim=3, typ='lk', noise_level=0.1)
+    arm_sketches, _ = fetch_arm_sketch(X, [10]*3, tensor_proj=True)
+    core_sketch, phis = fetch_core_sketch(X, [20]*3)
+    print(core_sketch.shape)
+    one_pass_sketch = SketchOnePassRecover(core_sketch, arm_sketches, phis, [3]*3)
+    X_hat, core_tensor, arm_sketches = one_pass_sketch.in_memory_fix_rank_recover(mode='st_hosvd')
+    print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = one_pass_sketch.fix_rank_recover()
     print(eval_rerr(X, X_hat, X))
 
 
 if  __name__ == "__main__":
-    test_st_hosvd()
+    # test_st_hosvd()
+    test_two_pass_in_memory()
+    test_one_pass_in_memory()

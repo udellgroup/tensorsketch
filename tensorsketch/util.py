@@ -281,7 +281,7 @@ def eval_rerr(X, X_hat, X0=None):
     :param X0: true signal, tensor
     :return: the relative error = ||X- X_hat||_F/ ||X_0||_F
     """
-    if X0:
+    if X0 is not None:
         error = X0 - X_hat
         return np.linalg.norm(error.reshape(np.size(error), 1), 'fro') / \
            np.linalg.norm(X0.reshape(np.size(X0), 1), 'fro')
