@@ -5,8 +5,7 @@ from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_re
 from .sketch import fetch_arm_sketch, fetch_core_sketch
 import time
 from tensorly.decomposition import tucker
-from .recover_from_sketches import SketchTwoPassRecover
-from .recover_from_sketches import SketchOnePassRecover
+from .recover_from_sketches import SketchTwoPassRecover, SketchOnePassRecover
 
 
 class TensorApprox(object):
@@ -14,15 +13,15 @@ class TensorApprox(object):
     The wrapper class for approximating the target tensor with three methods: HOOI, two-pass sketching, and one pass sketching
     """
 
-    def __init__(self, X, ranks, ks=[], ss=[], random_seed=1, rm_typ='g', store_phis=True):
+    def __init__(self, X, ranks, ks=[], ss=[], **kwargs):
+
         tl.set_backend('numpy')
         self.X = X
         self.ranks = ranks
         self.ks = ks
         self.ss = ss
-        self.random_seed = random_seed
-        self.rm_typ = rm_typ
-        self.store_phis = store_phis
+        self.random_setting = kwargs
+
 
     def in_memory_fix_rank_tensor_approx(self, method):
         start_time = time.time()
@@ -48,12 +47,13 @@ class TensorApprox(object):
             recover_time = running_time
 
         elif method == "two_pass":
+
             arm_sketches = fetch_arm_sketch(self.X, self.ks, typ=self.rm_typ)
             # core_sketch = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
-            X_hat, tucker_factors, tucker_core = sketch_two_pass.recover()
+            X_hat, tucker_factors, tucker_core = sketch_two_pass.in_memory_fix_rank_recover(self, mode='st_hosvd')
             recover_time = time.time() - start_time
 
         elif method == "one_pass":
