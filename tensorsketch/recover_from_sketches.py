@@ -77,7 +77,7 @@ class SketchTwoPassRecover(object):
             self.core_tensor, factors = st_hosvd(self.core_tensor, target_ranks=self.ranks)
 
         # arm[n] = Q.T*factors[n]
-        for n in range(len(factors)):
+        for n in range(N):
             self.arms.append(np.dot(Qs[n], factors[n]))
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
         return X_hat, self.core_tensor, self.arms
@@ -102,6 +102,21 @@ class SketchTwoPassRecover(object):
             Q = Qs[mode_n]
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
 
+        self.arms = Qs
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        return X_hat, self.core_tensor, self.arms
+
+
+    def low_rank_approximation(self):
+        Qs = []
+        for sketch in self.arm_sketches:
+            Q, _ = np.linalg.qr(np.array(sketch))
+            Qs.append(Q)
+        self.core_tensor = self.X
+        N = len(self.arm_sketches)
+        for mode_n in range(N):
+            Q = Qs[mode_n]
+            self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
         self.arms = Qs
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
         return X_hat, self.core_tensor, self.arms
@@ -161,6 +176,24 @@ class SketchOnePassRecover(object):
             # truncated svd
             u, _, _ = svds(sketch, self.ranks[i])
             Qs.append(u)
+        self.core_tensor = self.core_sketch
+        N = len(self.arm_sketches)
+        for mode_n in range(N):
+            u, _, _ = svds(sketch, self.ranks[mode_n])
+            self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
+                            np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
+        X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
+        return X_hat, self.core_tensor, self.arms
+
+    def low_rank_recover(self):
+
+        check_sketch_size_valid(self.arm_sketches, self.core_sketch, self.ranks, typ='f')
+        Qs = []
+        for sketch in self.arm_sketches:
+            # truncated svd
+            Q, _ = np.linalg.qr(np.array(sketch))
+            Qs.append(u)
+
         self.core_tensor = self.core_sketch
         N = len(self.arm_sketches)
         for mode_n in range(N):

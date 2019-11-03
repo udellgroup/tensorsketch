@@ -38,11 +38,11 @@ class TensorApprox(object):
             recover_time = running_time
 
         elif method == "hooi":
+            core_sketch = np.zeros(1)
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             tucker_core, tucker_factors = tucker(self.X, self.ranks, init='svd')
             X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
             running_time = time.time() - start_time
-            core_sketch = np.zeros(1)
-            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
 
@@ -61,7 +61,6 @@ class TensorApprox(object):
         elif method == "one_pass":
             arm_sketches, _ = fetch_arm_sketch(self.X, self.ks, **self.random_setting)
             core_sketch, phis = fetch_core_sketch(self.X, self.ss, **self.random_setting)
-            # print(arm_sketches[0].shape)
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_one_pass = SketchOnePassRecover(core_sketch, arm_sketches, phis, self.ranks)
@@ -88,28 +87,36 @@ class TensorApprox(object):
         arm_sketches, core_sketch = sketch
 
         if method == "hooi":
+            # in this method, no sketch needed, so set as 'empty'
+            core_sketch = np.zeros(1)
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             core, tucker_factors = tucker(self.X, self.ranks, init='svd')
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
             running_time = time.time() - start_time
-            core_sketch = np.zeros(1)
-            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
 
         elif method == "st_hosvd":
+            # in this method, no sketch needed, so set as 'empty'
+            core_sketch = np.zeros(1)
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             core, tucker_factors = st_hosvd(self.X, self.ranks)
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
             running_time = time.time() - start_time
-            core_sketch = np.zeros(1)
-            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
 
+
         elif method == "two_pass":
+            arm_sketches, _ = fetch_arm_sketch(self.X, self.ks, **self.random_setting)
+            # core_sketch = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
+            core_sketch = None
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
-            X_hat, _, _ = sketch_two_pass.recover()
+            X_hat, tucker_factors, tucker_core = \
+                sketch_two_pass.in_memory_fix_rank_recover(mode='st_hosvd')
+
             recover_time = time.time() - start_time
 
         elif method == "one_pass":
