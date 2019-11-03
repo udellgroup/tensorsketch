@@ -107,7 +107,7 @@ class SketchTwoPassRecover(object):
         return X_hat, self.core_tensor, self.arms
 
 
-    def low_rank_approximation(self):
+    def low_rank_recover(self):
         Qs = []
         for sketch in self.arm_sketches:
             Q, _ = np.linalg.qr(np.array(sketch))
@@ -135,7 +135,6 @@ class SketchOnePassRecover(object):
         self.phis = phis
         self.core_sketch = core_sketch
         self.ranks = ranks
-
 
 
     def in_memory_fix_rank_recover(self, mode='st_hosvd'):
@@ -168,6 +167,7 @@ class SketchOnePassRecover(object):
 
         return X_hat, self.core_tensor, self.arms
 
+
     def fix_rank_recover(self):
 
         check_sketch_size_valid(self.arm_sketches, self.core_sketch, self.ranks, typ='f')
@@ -177,13 +177,15 @@ class SketchOnePassRecover(object):
             u, _, _ = svds(sketch, self.ranks[i])
             Qs.append(u)
         self.core_tensor = self.core_sketch
+        self.arms = Qs
         N = len(self.arm_sketches)
         for mode_n in range(N):
-            u, _, _ = svds(sketch, self.ranks[mode_n])
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
-                            np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
+                            np.linalg.pinv(np.dot(self.phis[mode_n].transpose(),
+                            self.arms[mode_n])), mode=mode_n)
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
         return X_hat, self.core_tensor, self.arms
+
 
     def low_rank_recover(self):
 
@@ -192,12 +194,11 @@ class SketchOnePassRecover(object):
         for sketch in self.arm_sketches:
             # truncated svd
             Q, _ = np.linalg.qr(np.array(sketch))
-            Qs.append(u)
-
+            Qs.append(Q)
+        self.arms = Qs
         self.core_tensor = self.core_sketch
         N = len(self.arm_sketches)
         for mode_n in range(N):
-            u, _, _ = svds(sketch, self.ranks[mode_n])
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, \
                             np.linalg.pinv(np.dot(self.phis[mode_n].transpose(), Qs[mode_n])), mode=mode_n)
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
@@ -222,6 +223,8 @@ def test_two_pass_in_memory():
     print(eval_rerr(X, X_hat, X))
     X_hat, core_tensor, arm_sketches = two_pass_sketch.fix_rank_recover()
     print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = two_pass_sketch.low_rank_recover()
+    print(eval_rerr(X, X_hat, X))
 
 
 def test_one_pass_in_memory():
@@ -233,6 +236,8 @@ def test_one_pass_in_memory():
     X_hat, core_tensor, arm_sketches = one_pass_sketch.in_memory_fix_rank_recover(mode='st_hosvd')
     print(eval_rerr(X, X_hat, X))
     X_hat, core_tensor, arm_sketches = one_pass_sketch.fix_rank_recover()
+    print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = one_pass_sketch.low_rank_recover()
     print(eval_rerr(X, X_hat, X))
 
 
