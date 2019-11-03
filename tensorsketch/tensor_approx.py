@@ -32,7 +32,7 @@ class TensorApprox(object):
             core_sketch = np.zeros(1)
             arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             tucker_core, tucker_factors = st_hosvd(self.X, self.ranks)
-            X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
+            X_hat = tl.tucker_to_tensor(tucker_core, tucker_factors)
             running_time = time.time() - start_time
             sketch_time = -1
             recover_time = running_time
@@ -42,30 +42,30 @@ class TensorApprox(object):
             X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
             running_time = time.time() - start_time
             core_sketch = np.zeros(1)
-            arm_sketches = [[] for i in np.arange(len(self.X.shape))]
+            arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             sketch_time = -1
             recover_time = running_time
 
         elif method == "two_pass":
 
-            arm_sketches = fetch_arm_sketch(self.X, self.ks, typ=self.rm_typ)
+            arm_sketches, _ = fetch_arm_sketch(self.X, self.ks, **self.random_setting)
             # core_sketch = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
+            core_sketch = None
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
-            X_hat, tucker_factors, tucker_core = sketch_two_pass.in_memory_fix_rank_recover(self, mode='st_hosvd')
+            X_hat, tucker_factors, tucker_core = \
+            sketch_two_pass.in_memory_fix_rank_recover(mode='st_hosvd')
             recover_time = time.time() - start_time
 
         elif method == "one_pass":
-            arm_sketches = fetch_arm_sketch(self.X, self.ks, typ=self.rm_typ)
-            core_sketch, phis = fetch_core_sketch(self.X, self.ss, typ=self.rm_typ)
+            arm_sketches, _ = fetch_arm_sketch(self.X, self.ks, **self.random_setting)
+            core_sketch, phis = fetch_core_sketch(self.X, self.ss, **self.random_setting)
             # print(arm_sketches[0].shape)
             sketch_time = time.time() - start_time
             start_time = time.time()
-            sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch,
-                                        TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss),
-                                        RandomInfoBucket(random_seed=self.random_seed), phis)
-            X_hat, tucker_factors, tucker_core = sketch_one_pass.recover()
+            sketch_one_pass = SketchOnePassRecover(core_sketch, arm_sketches, phis, self.ranks)
+            X_hat, tucker_factors, tucker_core = sketch_one_pass.in_memory_fix_rank_recover(mode='st_hosvd')
             recover_time = time.time() - start_time
         else:
             raise Exception("please use either of the three methods: "
@@ -86,6 +86,7 @@ class TensorApprox(object):
         # Construct the approximation directly from sketch
         start_time = time.time()
         arm_sketches, core_sketch = sketch
+
         if method == "hooi":
             core, tucker_factors = tucker(self.X, self.ranks, init='svd')
             X_hat = tl.tucker_to_tensor(core, tucker_factors)
@@ -104,20 +105,17 @@ class TensorApprox(object):
             sketch_time = -1
             recover_time = running_time
 
-        elif method == "twopass":
+        elif method == "two_pass":
             sketch_time = time.time() - start_time
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, _, _ = sketch_two_pass.recover()
             recover_time = time.time() - start_time
 
-        elif method == "onepass":
+        elif method == "one_pass":
             sketch_time = time.time() - start_time
             start_time = time.time()
-            sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, \
-                                TensorInfoBucket(self.X.shape, self.ks, self.ranks, self.ss), \
-                                RandomInfoBucket(random_seed=self.random_seed), \
-                                sketch.get_phis())
+            sketch_one_pass = SketchOnePassRecover(arm_sketches, core_sketch, phis, self.ranks)
             X_hat, _, _ = sketch_one_pass.recover()
             recover_time = time.time() - start_time
         else:
@@ -146,11 +144,16 @@ if __name__ == "__main__":
     X, X0 = square_tensor_gen(n, rank, dim, gen_typ, \
                               noise_level, seed=1)
     tapprox1 = TensorApprox(X, ranks, ks, ss)
-    _, _, _, rerr, _ = tapprox1.tensor_approx("st_hosvd")
+
+    print("now testing st_hosvd")
+    _, _, _, rerr, _ = tapprox1.in_memory_fix_rank_tensor_approx("st_hosvd")
     print(rerr)
-    _, _, _, rerr, _ = tapprox1.tensor_approx("twopass")
+
+    print("now testing two pass")
+    _, _, _, rerr, _ = tapprox1.in_memory_fix_rank_tensor_approx("two_pass")
     print(rerr)
-    _, _, _, rerr, _ = tapprox1.tensor_approx("onepass")
+
+    _, _, _, rerr, _ = tapprox1.in_memory_fix_rank_tensor_approx("one_pass")
     print(rerr)
 
     # Test it for data with unequal side length
