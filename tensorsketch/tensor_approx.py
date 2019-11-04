@@ -134,14 +134,14 @@ class TensorApprox(object):
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, tucker_factors, tucker_core = \
                 sketch_two_pass.low_rank_recover()
-
             recover_time = time.time() - start_time
 
         elif method == "one_pass":
+            arm_sketches, _ = fetch_arm_sketch(self.X, self.ks, **self.random_setting)
+            core_sketch, phis = fetch_core_sketch(self.X, self.ss, **self.random_setting)
             sketch_time = time.time() - start_time
-            start_time = time.time()
             sketch_one_pass = SketchOnePassRecover(core_sketch, arm_sketches, phis, self.ranks)
-            X_hat, tucker_factors, tucker_core = sketch_one_pass.low_rank_recover()
+            start_time = time.time()
             X_hat, _, _ = sketch_one_pass.low_rank_recover()
             recover_time = time.time() - start_time
         else:
@@ -195,7 +195,17 @@ if __name__ == "__main__":
         _, _, _, rerr, _ = tapprox1.low_rank_tensor_approx("one_pass")
         print(rerr)
 
+    def test_fix_rank():
+
+        print("now testing two pass")
+        _, _, _, rerr, _ = tapprox1.fix_rank_tensor_approx("two_pass")
+        print(rerr)
+
+        print("now testing one pass")
+        _, _, _, rerr, _ = tapprox1.fix_rank_tensor_approx("one_pass")
+        print(rerr)
+
     # test_in_memory_fix_rank()
-    test_low_rank()
+    test_fix_rank()
 
 
