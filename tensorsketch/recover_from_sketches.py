@@ -17,7 +17,8 @@ import numpy as np
 import tensorly as tl
 from tensorly.decomposition import tucker
 from .sketch import fetch_arm_sketch, fetch_core_sketch
-from .util import square_tensor_gen, eval_rerr, st_hosvd
+from .util import square_tensor_gen,  st_hosvd
+from .evaluate import eval_rerr
 from scipy.sparse.linalg import svds
 
 def check_sketch_size_valid(arm_sketches, core_sketch, ranks, typ='i'):
@@ -101,7 +102,6 @@ class SketchTwoPassRecover(object):
         for mode_n in range(N):
             Q = Qs[mode_n]
             self.core_tensor = tl.tenalg.mode_dot(self.core_tensor, Q.T, mode=mode_n)
-
         self.arms = Qs
         X_hat = tl.tucker_to_tensor(self.core_tensor, self.arms)
         return X_hat, self.core_tensor, self.arms
@@ -206,7 +206,7 @@ class SketchOnePassRecover(object):
 
 
 def test_st_hosvd():
-    X, X0 = square_tensor_gen(20, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
+    X, X0 = square_tensor_gen(20, 3, dim=5, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
     core, arms = st_hosvd(X, 3)
     print(core.shape, arms[0].shape)
     # tucker_to_tensor core tensor and list of matrix
@@ -216,28 +216,28 @@ def test_st_hosvd():
 
 
 def test_two_pass_in_memory():
-    X, X0 = square_tensor_gen(100, 3, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
+    X, X0 = square_tensor_gen(100, 5, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_factor=0.2)
     arm_sketches, _ = fetch_arm_sketch(X, [10]*3, tensor_proj=True)
     two_pass_sketch = SketchTwoPassRecover(X, arm_sketches, [3]*3)
     X_hat, core_tensor, arm_sketches = two_pass_sketch.in_memory_fix_rank_recover(mode='st_hosvd')
     print(eval_rerr(X, X_hat, X))
-    X_hat, core_tensor, arm_sketches = two_pass_sketch.fix_rank_recover()
-    print(eval_rerr(X, X_hat, X))
     X_hat, core_tensor, arm_sketches = two_pass_sketch.low_rank_recover()
+    print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = two_pass_sketch.fix_rank_recover()
     print(eval_rerr(X, X_hat, X))
 
 
 def test_one_pass_in_memory():
-    X, X0 = square_tensor_gen(100, 3, dim=3, typ='lk', noise_level=0.1)
-    arm_sketches, _ = fetch_arm_sketch(X, [10]*3, tensor_proj=True)
-    core_sketch, phis = fetch_core_sketch(X, [20]*3)
+    X, X0 = square_tensor_gen(100, 5, dim=3, typ='lk', noise_level=0.1)
+    arm_sketches, _ = fetch_arm_sketch(X, [10]*5, tensor_proj=True)
+    core_sketch, phis = fetch_core_sketch(X, [20]*5)
     print(core_sketch.shape)
     one_pass_sketch = SketchOnePassRecover(core_sketch, arm_sketches, phis, [3]*3)
     X_hat, core_tensor, arm_sketches = one_pass_sketch.in_memory_fix_rank_recover(mode='st_hosvd')
     print(eval_rerr(X, X_hat, X))
-    X_hat, core_tensor, arm_sketches = one_pass_sketch.fix_rank_recover()
-    print(eval_rerr(X, X_hat, X))
     X_hat, core_tensor, arm_sketches = one_pass_sketch.low_rank_recover()
+    print(eval_rerr(X, X_hat, X))
+    X_hat, core_tensor, arm_sketches = one_pass_sketch.fix_rank_recover()
     print(eval_rerr(X, X_hat, X))
 
 

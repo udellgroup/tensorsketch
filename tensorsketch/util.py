@@ -8,36 +8,6 @@ from collections.abc import Iterable
 tl.set_backend('numpy')
 
 
-class TensorInfoBucket(object):
-    def __init__(self, tensor_shape, ks, ranks, ss):
-        '''
-        Information of the original tensor X
-        :ks: list of value of k for sketch
-        :ranks: n-darray for the ranks of X
-        : ss : list of value of s for sketch
-        '''
-        self.tensor_shape = tensor_shape
-        self.ks = ks
-        self.ranks = ranks
-        self.ss = ss
-
-    def get_info(self):
-        return self.tensor_shape, self.ks, self.ranks, self.ss
-
-
-class RandomInfoBucket(object):
-    '''
-    Information for generating randomized linear maps
-    '''
-
-    def __init__(self, std=1, typ='g', random_seed=0, sparse_factor=0.1):
-        self.std = std
-        self.typ = typ
-        self.random_seed = random_seed
-        self.sparse_factor = sparse_factor
-
-    def get_info(self):
-        return self.std, self.typ, self.random_seed, self.sparse_factor
 
 
 def random_matrix_generator(m, n, Rinfo_bucket):
@@ -273,21 +243,6 @@ def square_tensor_gen(n, r, dim=3, typ='lk', noise_level=0.1, seed=None, sparse_
                  * np.sqrt((noise_level ** 2) * true_signal_mag / total_num)
         return tensor, tensor0
 
-
-def eval_rerr(X, X_hat, X0=None):
-    """
-    :param X: tensor, X0 or X0+noise
-    :param X_hat: output for apporoximation
-    :param X0: true signal, tensor
-    :return: the relative error = ||X- X_hat||_F/ ||X_0||_F
-    """
-    if X0 is not None:
-        error = X0 - X_hat
-        return np.linalg.norm(error.reshape(np.size(error), 1), 'fro') / \
-           np.linalg.norm(X0.reshape(np.size(X0), 1), 'fro')
-    error = X - X_hat
-    return np.linalg.norm(error.reshape(np.size(error), 1), 'fro') / \
-           np.linalg.norm(X0.reshape(np.size(X), 1), 'fro')
 
 
 # ST-HOSVD

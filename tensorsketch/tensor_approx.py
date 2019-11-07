@@ -1,11 +1,20 @@
+#######################
+#                     *
+#  Yiming Sun         *
+#  11/2019            *
+#                     *
+#######################
+
 import numpy as np
 from scipy import fftpack
 import tensorly as tl
-from .util import square_tensor_gen, TensorInfoBucket, RandomInfoBucket, eval_rerr, st_hosvd
+from .util import square_tensor_gen, st_hosvd
 from .sketch import fetch_arm_sketch, fetch_core_sketch
 import time
 from tensorly.decomposition import tucker
 from .recover_from_sketches import SketchTwoPassRecover, SketchOnePassRecover
+from .evaluate import eval_rerr
+
 
 
 class TensorApprox(object):
@@ -133,7 +142,7 @@ class TensorApprox(object):
             start_time = time.time()
             sketch_two_pass = SketchTwoPassRecover(self.X, arm_sketches, self.ranks)
             X_hat, tucker_factors, tucker_core = \
-                sketch_two_pass.low_rank_recover()
+                sketch_two_pass.fix_rank_recover()
             recover_time = time.time() - start_time
 
         elif method == "one_pass":
@@ -142,7 +151,7 @@ class TensorApprox(object):
             sketch_time = time.time() - start_time
             sketch_one_pass = SketchOnePassRecover(core_sketch, arm_sketches, phis, self.ranks)
             start_time = time.time()
-            X_hat, _, _ = sketch_one_pass.low_rank_recover()
+            X_hat, _, _ = sketch_one_pass.fix_rank_recover()
             recover_time = time.time() - start_time
         else:
             raise Exception("please use either of the three methods: "
@@ -205,7 +214,7 @@ if __name__ == "__main__":
         _, _, _, rerr, _ = tapprox1.fix_rank_tensor_approx("one_pass")
         print(rerr)
 
-    # test_in_memory_fix_rank()
+    test_in_memory_fix_rank()
     test_fix_rank()
 
 

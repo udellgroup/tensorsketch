@@ -1,6 +1,6 @@
 import tensorly as tl
 import numpy as np
-from .util import random_matrix_generator, RandomInfoBucket, square_tensor_gen
+from .util import random_matrix_generator, square_tensor_gen
 from .util import ssrft_modeprod, gprod, sp0prod
 from .random_projection import random_matrix_generator, tensor_random_matrix_generator
 from sklearn.decomposition import TruncatedSVD
