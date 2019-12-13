@@ -69,14 +69,17 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
         else:
             ks = np.arange(r, int(n / 10), int(n / 100))
         hooi_rerr = np.zeros((sim_runs, len(ks)))
+        st_hosvd_rerr = np.zeros((sim_runs, len(ks)))
         two_pass_rerr = np.zeros((sim_runs, len(ks)))
         one_pass_rerr = np.zeros((sim_runs, len(ks)))
 
         hooi_sketch_time = np.zeros((sim_runs, len(ks)))
+        st_hosvd_sketch_time = np.zeros((sim_runs, len(ks)))
         two_pass_sketch_time = np.zeros((sim_runs, len(ks)))
         one_pass_sketch_time = np.zeros((sim_runs, len(ks)))
 
         hooi_recover_time = np.zeros((sim_runs, len(ks)))
+        st_hosvd_recover_time = np.zeros((sim_runs, len(ks)))
         two_pass_recover_time = np.zeros((sim_runs, len(ks)))
         one_pass_recover_time = np.zeros((sim_runs, len(ks)))
 
@@ -85,21 +88,25 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
                 simu = simulation.Simulation(n, r, k, 2 * k + 1, dim,
                                              tensorsketch.util.RandomInfoBucket(random_seed=random_seed), gen_type,
                                              noise_level, rm_typ)
-                (rerr_hooi, rerr_twopass, rerr_onepass), (time_hooi, time_twopass, time_onepass) = simu.run_sim()
+                (rerr_hooi, rerr_st_hosvd, rerr_twopass, rerr_onepass), (time_hooi, time_st_hosvd, time_twopass, time_onepass) = simu.run_sim()
                 hooi_rerr[i, idx] = rerr_hooi
+                st_hosvd_rerr[i, idx] = rerr_st_hosvd
                 two_pass_rerr[i, idx] = rerr_twopass
                 one_pass_rerr[i, idx] = rerr_onepass
 
                 hooi_sketch_time[i, idx] = time_hooi[0]
+                st_hosvd_sketch_time[i, idx] = time_st_hosvd[0]
                 two_pass_sketch_time[i, idx] = time_twopass[0]
                 one_pass_sketch_time[i, idx] = time_onepass[0]
+
                 hooi_recover_time[i, idx] = time_hooi[1]
+                st_hosvd_recover_time[i, idx] = time_st_hosvd[1]
                 two_pass_recover_time[i, idx] = time_twopass[1]
                 one_pass_recover_time[i, idx] = time_onepass[1]
 
-        sim_list.append([two_pass_rerr, one_pass_rerr, hooi_rerr])
-        sim_time_list[0].append([two_pass_sketch_time, one_pass_sketch_time, hooi_sketch_time])
-        sim_time_list[1].append([two_pass_recover_time, one_pass_recover_time, hooi_recover_time])
+        sim_list.append([two_pass_rerr, one_pass_rerr, hooi_rerr, st_hosvd_rerr])
+        sim_time_list[0].append([two_pass_sketch_time, one_pass_sketch_time, hooi_sketch_time, st_hosvd_sketch_time])
+        sim_time_list[1].append([two_pass_recover_time, one_pass_recover_time, hooi_recover_time, st_hosvd_recover_time])
 
     pickle.dump(sim_list, open(sim_name(gen_type, r, noise_level, dim, rm_typ) + ".pickle", "wb"))
     pickle.dump(sim_time_list, open(sim_name(gen_type, r, noise_level, dim, rm_typ) + "_time.pickle", "wb"))
