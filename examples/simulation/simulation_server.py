@@ -31,7 +31,7 @@ class ClassName(object):
 # In[2]:
 
 
-def sim_name(gen_type, r, noise_level, dim, rm_typ):
+def sim_name(gen_type, r, noise_level, dim, typ, tensor_proj):
     """
     Obtain the file name to use for a given simulation setting
     """
@@ -39,8 +39,11 @@ def sim_name(gen_type, r, noise_level, dim, rm_typ):
         noise = "no"
     else:
         noise = str(int(np.log10(noise_level)))
-    return "data/typ" + gen_type + "_r" + str(r) + "_noise" + noise + "_dim" + str(dim) + "_" + rm_typ
-
+    if tensor_proj: 
+        t = "prod"
+    else:
+        t = ""
+    return "data/typ" + gen_type + "_r" + str(r) + "_noise" + noise + "_dim" + str(dim) + "_" + typ +t
 
 # In[3]:
 
@@ -108,8 +111,8 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
         sim_time_list[0].append([two_pass_sketch_time, one_pass_sketch_time, hooi_sketch_time, st_hosvd_sketch_time])
         sim_time_list[1].append([two_pass_recover_time, one_pass_recover_time, hooi_recover_time, st_hosvd_recover_time])
 
-    pickle.dump(sim_list, open(sim_name(gen_type, r, noise_level, dim, rm_typ) + ".pickle", "wb"))
-    pickle.dump(sim_time_list, open(sim_name(gen_type, r, noise_level, dim, rm_typ) + "_time.pickle", "wb"))
+    pickle.dump(sim_list, open(sim_name(gen_type, r, noise_level, dim, typ, tensor_proj) + ".pickle", "wb"))
+    pickle.dump(sim_time_list, open(sim_name(gen_type, r, noise_level, dim, typ, tensor_proj) + "_time.pickle", "wb"))
     return sim_list
 
 
