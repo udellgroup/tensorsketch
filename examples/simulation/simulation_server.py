@@ -48,7 +48,7 @@ def sim_name(gen_type, r, noise_level, dim, typ, tensor_proj):
 # In[3]:
 
 
-def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_runs=1, random_seed=1, **kwargs):
+def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_runs=1, random_seed=1, typ = "g", tensor_proj = True):
     """
     Simulate multiple datasets with different n for multiple runs. For each run, perform the HOOI, 
     two pass sketching, and one pass sketching 
@@ -90,7 +90,7 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
         for i in range(sim_runs):
             for idx, k in enumerate(ks):
                 simu = simulation.Simulation(n, r, k, 2 * k + 1, dim, gen_type,
-                                             noise_level, **kwargs)
+                                             noise_level, typ = typ, tensor_proj = tensor_proj)
                 (rerr_hooi, rerr_st_hosvd, rerr_twopass, rerr_onepass), (time_hooi, time_st_hosvd, time_twopass, time_onepass) = simu.run_sim()
                 hooi_rerr[i, idx] = rerr_hooi
                 st_hosvd_rerr[i, idx] = rerr_st_hosvd
