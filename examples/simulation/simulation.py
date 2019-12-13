@@ -35,6 +35,7 @@ class Simulation(object):
         X_hat_st_hosvd, _, _, _, time_st_hosvd = tapprox.in_memory_fix_rank_tensor_approx('st_hosvd')
         X_hat_twopass, _, _, _, time_twopass = tapprox.in_memory_fix_rank_tensor_approx('two_pass')
         X_hat_onepass, _, _, _, time_onepass = tapprox.in_memory_fix_rank_tensor_approx('one_pass')
+        rerr_hooi = tensorsketch.evaluate.eval_rerr(X, X_hat_st_hosvd, X)
         rerr_st_hosvd = tensorsketch.evaluate.eval_rerr(X, X_hat_st_hosvd, X)
         rerr_twopass = tensorsketch.evaluate.eval_rerr(X, X_hat_twopass, X)
         rerr_onepass = tensorsketch.evaluate.eval_rerr(X, X_hat_onepass, X)

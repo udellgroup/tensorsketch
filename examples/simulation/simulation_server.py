@@ -45,7 +45,7 @@ def sim_name(gen_type, r, noise_level, dim, rm_typ):
 # In[3]:
 
 
-def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_runs=1, random_seed=1, rm_typ="g"):
+def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_runs=1, random_seed=1, **kwargs):
     """
     Simulate multiple datasets with different n for multiple runs. For each run, perform the HOOI, 
     two pass sketching, and one pass sketching 
@@ -59,15 +59,16 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
     :param sim_runs: num of simulated runs in each setting 
     :param random_seed: random seed for generating the random matrix  
     """
+    np.random.seed(random_seed)
     sim_list = []
     sim_time_list = [[], []]
     for id, n in enumerate(ns):
         if gen_type in ['id', 'lk']:
-            ks = np.arange(r, int(n / 2), int(n / 20))
+            ks = np.arange(r+1, int(n / 2), int(n / 20))
         elif gen_type in ['spd', 'fpd']:
-            ks = np.arange(r, int(n / 5), int(n / 50))
+            ks = np.arange(r+1, int(n / 5), int(n / 50))
         else:
-            ks = np.arange(r, int(n / 10), int(n / 100))
+            ks = np.arange(r+1, int(n / 10), int(n / 100))
         hooi_rerr = np.zeros((sim_runs, len(ks)))
         st_hosvd_rerr = np.zeros((sim_runs, len(ks)))
         two_pass_rerr = np.zeros((sim_runs, len(ks)))
@@ -85,9 +86,8 @@ def run_nssim(gen_type, r, noise_level, ns=np.arange(100, 101, 100), dim=3, sim_
 
         for i in range(sim_runs):
             for idx, k in enumerate(ks):
-                simu = simulation.Simulation(n, r, k, 2 * k + 1, dim,
-                                             tensorsketch.util.RandomInfoBucket(random_seed=random_seed), gen_type,
-                                             noise_level, rm_typ)
+                simu = simulation.Simulation(n, r, k, 2 * k + 1, dim, gen_type,
+                                             noise_level, **kwargs)
                 (rerr_hooi, rerr_st_hosvd, rerr_twopass, rerr_onepass), (time_hooi, time_st_hosvd, time_twopass, time_onepass) = simu.run_sim()
                 hooi_rerr[i, idx] = rerr_hooi
                 st_hosvd_rerr[i, idx] = rerr_st_hosvd
@@ -165,89 +165,65 @@ def plot_nssim(gen_type, r, noise_level, name, n, ns=[200, 400, 600], dim=3, sim
     plt.show()
 
 
-def run_nssim_fk(gen_type, r0, noise_level, n, dim=3, random_seed=1, rm_typ="g"):
-    '''
-    Simulate the dataset with fixed k and varying rank r, and perform HOOI, two-pass sketching, one-pass
-    sketching for each setting. 
-    '''
-    X, X0 = tensorsketch.util.square_tensor_gen(n, r0, dim, typ=gen_type, \
-                                                noise_level=noise_level, seed=random_seed)
-    k = int(n * 1 / 3)
-    s = 2 * k + 1
-    rs = np.arange(int(r0 / 2), int(n / 10), int(n / 200))
-    _, _, _, hooi_rerr, _ = tensorsketch.tensor_approx.TensorApprox(X, np.repeat(r0, dim), rm_typ=rm_typ).tensor_approx(
-        'hooi')
-    hooi_result = np.repeat(hooi_rerr, len(rs))
-    two_pass_result = np.zeros(len(rs))
-    one_pass_result = np.zeros(len(rs))
-    for idx, r in enumerate(rs):
-        sim = tensorsketch.tensor_approx.TensorApprox(X, np.repeat(r, dim), np.repeat(k, dim), np.repeat(s, dim),
-                                                      rm_typ=rm_typ)
-        _, _, _, two_pass_rerr, _ = sim.tensor_approx('twopass')
-        _, _, _, one_pass_rerr, _ = sim.tensor_approx('onepass')
-        one_pass_result[idx] = one_pass_rerr
-        two_pass_result[idx] = two_pass_rerr
-    sim_list = [two_pass_result, one_pass_result, hooi_result]
-    pickle.dump(sim_list, open(sim_name(gen_type, r0, noise_level, dim, rm_typ) + "_n" + str(n) + "fk.pickle", "wb"))
-    return sim_list
+
 
 
 if __name__ == '__main__':
-    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('lk', 5, 1, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('slk', 5, 1, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), rm_typ="sp0prod")
-    run_nssim('id', 5, 1, np.arange(200, 601, 200), rm_typ="sp0prod")
+    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('lk', 5, 1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('slk', 5, 1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
+    run_nssim('id', 5, 1, np.arange(200, 601, 200), typ="sp0", tensor_proj = True)
 
-    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('lk', 5, 1, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('slk', 5, 1, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), rm_typ="g")
-    run_nssim('id', 5, 1, np.arange(200, 601, 200), rm_typ="g")
+    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('lk', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('slk', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
+    run_nssim('id', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = False)
 
-    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('lk', 5, 1, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('slk', 5, 1, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), rm_typ="gprod")
-    run_nssim('id', 5, 1, np.arange(200, 601, 200), rm_typ="gprod")
+    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('lk', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('slk', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
+    run_nssim('id', 5, 1, np.arange(200, 601, 200), typ="g", tensor_proj = True)
 
-    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('lk', 5, 1, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('slk', 5, 1, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), rm_typ="ssrft")
-    run_nssim('id', 5, 1, np.arange(200, 601, 200), rm_typ="ssrft")
+    run_nssim('lk', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('lk', 5, 0.1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('lk', 5, 1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('spd', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('fpd', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('fed', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('sed', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('slk', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('slk', 5, 0.1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('slk', 5, 1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('id', 5, 0.01, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('id', 5, 0.1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
+    run_nssim('id', 5, 1, np.arange(200, 601, 200), typ="ssrft", tensor_proj = False)
 
 ''' 
     run_nssim_fk('id',5,0.01,600, rm_typ = "ssrft")

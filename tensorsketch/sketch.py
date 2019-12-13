@@ -18,6 +18,8 @@ def fetch_arm_sketch(X, ks, tensor_proj=True, **kwargs_rg):
     """
     arm_sketches = []
     omegas = []
+    if 'tensor_proj' in kwargs_rg:
+        del kwargs_rg['tensor_proj']
     for i, n in enumerate(X.shape):
         shape = list(X.shape)
         del shape[i]
@@ -44,6 +46,8 @@ def fetch_core_sketch(X, ss, **kwargs_rg):
     :return: [core_sketch:s_n\times s_n ...\times s_n,
     list of sketches phis, s_n\times I_n]
     """
+    if 'tensor_proj' in kwargs_rg:
+        del kwargs_rg['tensor_proj']
     core_sketch = X
     phis = []
     shape = list(core_sketch.shape)

@@ -50,7 +50,7 @@ class TensorApprox(object):
             core_sketch = np.zeros(1)
             arm_sketches = [[] for _ in np.arange(len(self.X.shape))]
             tucker_core, tucker_factors = tucker(self.X, self.ranks, init='svd')
-            X_hat = tl.tucker_to_tensor((tucker_core, tucker_factors))
+            X_hat = tl.tucker_to_tensor(tucker_core, tucker_factors)
             running_time = time.time() - start_time
             sketch_time = -1
             recover_time = running_time
