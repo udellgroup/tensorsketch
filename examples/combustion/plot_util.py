@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-
+import numpy as np 
 MARKER_LIST = ["s", "x", "o", "+", "*", "d", "^", "v"]
 MARKER_COLOR_LIST = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'lawngreen', 'violet']
 
@@ -54,7 +54,7 @@ def marker_color(method, rm_typ='gprod'):
     if (method, rm_typ) in pairs:
         return MARKER_COLOR_LIST[pairs.index((method, rm_typ))]
     else:
-        return np.random.rand(3, 1)
+        return np.random.rand(3)
 
 
 def marker(method, rm_typ='gprod'):
