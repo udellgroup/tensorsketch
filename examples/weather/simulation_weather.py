@@ -12,24 +12,18 @@ import warnings
 # In[8]:
 
 
-def simrun_name(name, inv_factor, rm_typ):
+def simrun_name(name, inv_factor, typ, tensor_proj):
     ''' 
     Create an file name for a simulation run
     '''
-    return "data/" + name + "_frk" + str(inv_factor) + "_" + rm_typ + ".pickle"
 
+    if tensor_proj: 
+        t = "proj"
+    else:
+        t = ""
+    return "data/" + name + "_frk" + str(inv_factor) + "_" + typ+t+".pickle"
 
-def simplot_name(name, inv_factor):
-    return "plots/" + name + "_frk" + str(inv_factor) + ".pdf"
-    '''
-    Create an file name for simulation result plots 
-    '''
-
-
-# In[9]:
-
-
-def run_realdata_frk(data, inv_factor, name, random_seed=1, rm_typ="g"):
+def run_realdata_frk(data, inv_factor, name, random_seed=1, typ="g", tensor_proj = False):
     '''
     Run one pass, two pass, and HOOI on the same real world low-rank tensor data with 
     fixed rank = 1/inv_factor and varying k. 
@@ -38,50 +32,24 @@ def run_realdata_frk(data, inv_factor, name, random_seed=1, rm_typ="g"):
     :param name: file name that store the simulation result. 
     '''
     ranks = (np.array(data.shape) / inv_factor).astype(int)
-    _, _, _, hooi_rerr, _ = tensorsketch.tensor_approx.TensorApprox(data, ranks, rm_typ=rm_typ).tensor_approx('hooi')
+    _, _, _, hooi_rerr, _ = tensorsketch.tensor_approx.TensorApprox(data, ranks, typ=typ, tensor_proj=tensor_proj).in_memory_fix_rank_tensor_approx('hooi')
+    _, _, _, st_hosvd_rerr, _ = tensorsketch.tensor_approx.TensorApprox(data, ranks, typ=typ, tensor_proj=tensor_proj).in_memory_fix_rank_tensor_approx('st_hosvd')
     hooi_result = np.repeat(hooi_rerr, len(np.arange(2 / inv_factor, 2 / 5, (2 / 5 - 1 / inv_factor) / 10))).tolist()
+    st_hosvd_result = np.repeat(st_hosvd_rerr, len(np.arange(2 / inv_factor, 2 / 5, (2 / 5 - 1 / inv_factor) / 10))).tolist()
     one_pass_result = []
     two_pass_result = []
     for factor in np.arange(2 / inv_factor, 2 / 5, (2 / 5 - 1 / inv_factor) / 10):
         ks = (np.array(data.shape) * factor).astype(int)
         ss = 2 * ks + 1
-        sim = tensorsketch.tensor_approx.TensorApprox(data, ranks, ks, ss, rm_typ=rm_typ)
-        _, _, _, two_pass_rerr, _ = sim.tensor_approx('twopass')
-        _, _, _, one_pass_rerr, _ = sim.tensor_approx('onepass')
+        tapprox = tensorsketch.tensor_approx.TensorApprox(data, ranks, ks, ss, typ=typ, tensor_proj=tensor_proj)
+        _, _, _, two_pass_rerr, _ = tapprox.in_memory_fix_rank_tensor_approx('two_pass')
+        _, _, _, one_pass_rerr, _ = tapprox.in_memory_fix_rank_tensor_approx('one_pass')
         one_pass_result.append(one_pass_rerr)
         two_pass_result.append(two_pass_rerr)
-    result = [hooi_result, two_pass_result, one_pass_result]
-    pickle.dump(result, open(simrun_name(name, inv_factor, rm_typ), "wb"))
+
+    result = [hooi_result, st_hosvd_result, two_pass_result, one_pass_result]
+    pickle.dump(result, open(simrun_name(name, inv_factor, typ, tensor_proj), "wb"))
     return result
-
-
-def run_realdata_fk(data, name, random_seed=1, rm_typ="g"):
-    '''
-    Run one pass, two pass, and HOOI on the same real world low-rank tensor data with 
-    same k and varying r. 
-    :param data: The dataset.
-    :param name: file name that store the simulation result. 
-    '''
-    X = data
-    kratio = 1 / 4
-    r0ratio = 1 / 20
-    rratios = np.arange((r0ratio), (1 / 5), (1 / 100))
-    dim = np.array(X.shape)
-    _, _, _, hooi_rerr, _ = tensorsketch.tensor_approx.TensorApprox(X, (dim * r0ratio).astype(int),
-                                                                    rm_typ=rm_typ).tensor_approx('hooi')
-    hooi_result = np.repeat(hooi_rerr, len(rratios))
-    two_pass_result = np.zeros(len(rratios))
-    one_pass_result = np.zeros(len(rratios))
-    for idx, rratio in enumerate(rratios):
-        sim = tensorsketch.tensor_approx.TensorApprox(X, (dim * rratio).astype(int), (dim * kratio).astype(int),
-                                                      (dim * kratio).astype(int) * 2 + 1, rm_typ=rm_typ)
-        _, _, _, two_pass_rerr, _ = sim.tensor_approx('twopass')
-        _, _, _, one_pass_rerr, _ = sim.tensor_approx('onepass')
-        one_pass_result[idx] = one_pass_rerr
-        two_pass_result[idx] = two_pass_rerr
-    sim_list = [two_pass_result, one_pass_result, hooi_result]
-    pickle.dump(sim_list, open("data/" + name + "_" + rm_typ + "_fk.pickle", "wb"))
-    return sim_list
 
 
 if __name__ == '__main__':
@@ -129,22 +97,23 @@ if __name__ == '__main__':
     AODABS = nc.Dataset("data/b.e11.B1850C5CN.f09_g16.005.cam.h0.AODABS.040001-049912.nc").variables['AODABS'][:]
     AODABS = AODABS.filled(AODABS.mean())
 
-    run_realdata_fk(AODABS, "AODABS", rm_typ="sp0")
-    run_realdata_frk(AODABS, 8, "AODABS", rm_typ="sp0")
-    run_realdata_frk(AODABS, 10, "AODABS", rm_typ="sp0")
-    run_realdata_frk(AODABS, 15, "AODABS", rm_typ="sp0")
+    #run_realdata_fk(AODABS, "AODABS", typ="sp0")
+    run_realdata_frk(AODABS, 8, "AODABS", typ="g", tensor_proj = True)
+    run_realdata_frk(AODABS, 10, "AODABS", typ="g", tensor_proj = True)
+    run_realdata_frk(AODABS, 15, "AODABS", typ="g", tensor_proj = True)
 
-    run_realdata_fk(SRFRAD, "SRFRAD", rm_typ="sp0")
-    run_realdata_frk(SRFRAD, 8, "SRFRAD", rm_typ="sp0")
-    run_realdata_frk(SRFRAD, 10, "SRFRAD", rm_typ="sp0")
-    run_realdata_frk(SRFRAD, 15, "SRFRAD", rm_typ="sp0")
 
-    run_realdata_fk(BURDENDUST, "BURDENDUST", rm_typ="sp0")
-    run_realdata_frk(BURDENDUST, 8, "BURDENDUST", rm_typ="sp0")
-    run_realdata_frk(BURDENDUST, 10, "BURDENDUST", rm_typ="sp0")
-    run_realdata_frk(BURDENDUST, 15, "BURDENDUST", rm_typ="sp0")
+    #run_realdata_fk(SRFRAD, "SRFRAD", typ="sp0")
+    run_realdata_frk(SRFRAD, 8, "SRFRAD", typ="g", tensor_proj = True)
+    run_realdata_frk(SRFRAD, 10, "SRFRAD", typ="g", tensor_proj = True)
+    run_realdata_frk(SRFRAD, 15, "SRFRAD", typ="g", tensor_proj = True)
 
-    run_realdata_fk(ABSORB, "ABSORB", rm_typ="sp0")
-    run_realdata_frk(ABSORB, 8, "ABSORB", rm_typ="sp0")
-    run_realdata_frk(ABSORB, 10, "ABSORB", rm_typ="sp0")
-    run_realdata_frk(ABSORB, 15, "ABSORB", rm_typ="sp0")
+    #run_realdata_fk(BURDENDUST, "BURDENDUST", typ="sp0")
+    run_realdata_frk(BURDENDUST, 8, "BURDENDUST", typ="g", tensor_proj = True)
+    run_realdata_frk(BURDENDUST, 10, "BURDENDUST", typ="g", tensor_proj = True)
+    run_realdata_frk(BURDENDUST, 15, "BURDENDUST", typ="g", tensor_proj = True)
+
+    #run_realdata_fk(ABSORB, "ABSORB", typ="sp0")
+    run_realdata_frk(ABSORB, 8, "ABSORB", typ="g", tensor_proj = True)
+    run_realdata_frk(ABSORB, 10, "ABSORB", typ="g", tensor_proj = True)
+    run_realdata_frk(ABSORB, 15, "ABSORB", typ="g", tensor_proj = True)
